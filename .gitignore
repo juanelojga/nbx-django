@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Django
+*.log
+*.pot
+*.pyc
+*.mo
+*.db
+*.sqlite3
+db.sqlite3
+media
+staticfiles
+static
+.env
+
+# VS Code / PyCharm / IDE
+.vscode/
+.idea/
+*.iml
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+*.env
+
+# Unit test / coverage reports
+.coverage
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.cache
+pytest_cache/
+
+# Django migrations (if you want to ignore them – not always recommended)
+# **/migrations/*.py
+# **/migrations/__pycache__/
+
+# System files
+.DS_Store
+Thumbs.db
