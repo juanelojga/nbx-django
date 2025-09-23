@@ -62,9 +62,52 @@ class Query(graphene.ObjectType):
             raise PermissionDenied()
         return package
 
+class CreateClient(graphene.Mutation):
+    class Arguments:
+        first_name = graphene.String(required=True)
+        last_name = graphene.String(required=True)
+        email = graphene.String(required=True)
+        password = graphene.String(required=True)
+        identification_number = graphene.String(required=True)
+        state = graphene.String(required=True)
+        city = graphene.String(required=True)
+        main_street = graphene.String(required=True)
+        secondary_street = graphene.String(required=True)
+        building_number = graphene.String(required=True)
+        mobile_phone_number = graphene.String(required=True)
+        phone_number = graphene.String(required=True)
+
+    client = graphene.Field(lambda: ClientType)
+
+    def mutate(self, info, first_name, last_name, email, password, identification_number, state, city, main_street, secondary_street, building_number, mobile_phone_number, phone_number):
+        if not info.context.user.is_superuser:
+            raise PermissionDenied()
+
+        User = get_user_model()
+        user = User.objects.create_user(username=email, email=email, password=password)
+
+        client = Client(
+            user=user,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            identification_number=identification_number,
+            state=state,
+            city=city,
+            main_street=main_street,
+            secondary_street=secondary_street,
+            building_number=building_number,
+            mobile_phone_number=mobile_phone_number,
+            phone_number=phone_number,
+        )
+        client.save()
+
+        return CreateClient(client=client)
+
 class Mutation(graphene.ObjectType):
     token_auth = graphql_jwt.ObtainJSONWebToken.Field()
     verify_token = graphql_jwt.Verify.Field()
     refresh_token = graphql_jwt.Refresh.Field()
+    create_client = CreateClient.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
