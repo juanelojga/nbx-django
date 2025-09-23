@@ -1,8 +1,13 @@
 import graphene
+from graphene.types.generic import GenericScalar
 import graphql_jwt
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.core.exceptions import PermissionDenied
 from graphene_django import DjangoObjectType
+from graphql import GraphQLError
+from graphql_jwt.shortcuts import get_token
+from graphql_jwt import utils
+from graphql_jwt import settings
 from .models import Package, Client
 
 class UserType(DjangoObjectType):
@@ -104,10 +109,28 @@ class CreateClient(graphene.Mutation):
 
         return CreateClient(client=client)
 
+class EmailAuth(graphene.Mutation):
+    token = graphene.String()
+    payload = GenericScalar()
+    refreshExpiresIn = graphene.Int()
+
+    class Arguments:
+        email = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    def mutate(self, info, email, password):
+        user = authenticate(request=info.context, email=email, password=password)
+        if user is None:
+            raise GraphQLError("Invalid credentials")
+
+        token = get_token(user)
+        return EmailAuth(token=token, payload=utils.jwt_payload(user), refreshExpiresIn=settings.JWT_REFRESH_EXPIRATION_DELTA.total_seconds())
+
 class Mutation(graphene.ObjectType):
     token_auth = graphql_jwt.ObtainJSONWebToken.Field()
     verify_token = graphql_jwt.Verify.Field()
     refresh_token = graphql_jwt.Refresh.Field()
     create_client = CreateClient.Field()
+    email_auth = EmailAuth.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
