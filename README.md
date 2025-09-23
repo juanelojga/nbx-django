@@ -34,6 +34,34 @@ python nbxdjango/manage.py create_fake_packages
 
 This command will create 10 fake clients (each with an associated user) and 100 fake packages, randomly assigned to these clients.
 
+## Running Tests
+
+This project uses `pytest` with `pytest-django` for testing.
+
+1.  Install testing dependencies:
+
+    ```bash
+    pip install pytest pytest-django
+    ```
+
+2.  Set the `DJANGO_SETTINGS_MODULE` environment variable and run all tests:
+
+    ```bash
+    DJANGO_SETTINGS_MODULE=nbxdjango.settings pytest
+    ```
+
+3.  Run tests for a specific app (e.g., `packagehandling`):
+
+    ```bash
+    DJANGO_SETTINGS_MODULE=nbxdjango.settings pytest nbxdjango/packagehandling/tests/
+    ```
+
+4.  Run tests for a specific file (e.g., `test_customuser.py`):
+
+    ```bash
+    DJANGO_SETTINGS_MODULE=nbxdjango.settings pytest nbxdjango/packagehandling/tests/models/test_customuser.py
+    ```
+
 ## Creating a Superuser Non-Interactively
 
 To create a superuser non-interactively, you can use the `create_superuser_script` management command. This method is ideal for automated tasks and deployment scripts as it does not require manual input.
