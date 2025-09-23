@@ -131,3 +131,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 GRAPHENE = {
     "SCHEMA": "packagehandling.schema.schema"
 }
+
+AUTHENTICATION_BACKENDS = [
+    'packagehandling.authentication.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
