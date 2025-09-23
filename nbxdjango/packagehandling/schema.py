@@ -1,7 +1,12 @@
 import graphene
 import graphql_jwt
+from django.contrib.auth import get_user_model
 from graphene_django import DjangoObjectType
 from .models import Package, Client
+
+class UserType(DjangoObjectType):
+    class Meta:
+        model = get_user_model()
 
 class PackageType(DjangoObjectType):
     class Meta:
@@ -18,6 +23,7 @@ class Query(graphene.ObjectType):
     package = graphene.Field(PackageType, id=graphene.Int())
     all_clients = graphene.List(ClientType)
     client = graphene.Field(ClientType, id=graphene.Int())
+    me = graphene.Field(UserType)
 
     def resolve_all_packages(root, info):
         return Package.objects.all()
@@ -30,6 +36,12 @@ class Query(graphene.ObjectType):
 
     def resolve_client(root, info, id):
         return Client.objects.get(pk=id)
+
+    def resolve_me(root, info):
+        user = info.context.user
+        if user.is_anonymous:
+            raise Exception('Not authenticated')
+        return user
 
 class Mutation(graphene.ObjectType):
     token_auth = graphql_jwt.ObtainJSONWebToken.Field()
