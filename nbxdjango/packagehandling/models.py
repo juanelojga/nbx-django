@@ -45,7 +45,11 @@ class Package(models.Model):
     real_price = models.FloatField()
     service_price = models.FloatField()
     arrival_date = models.DateField()
-    client_id = models.IntegerField()
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.CASCADE,
+        related_name='packages'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
