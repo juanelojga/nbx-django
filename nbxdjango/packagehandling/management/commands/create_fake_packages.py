@@ -1,13 +1,20 @@
+import random
 from django.core.management.base import BaseCommand
-from packagehandling.factories import PackageFactory
+from packagehandling.factories import ClientFactory, PackageFactory
 
 class Command(BaseCommand):
-    help = 'Creates fake packages'
-
-    def add_arguments(self, parser):
-        parser.add_argument('count', type=int, help='The number of packages to create')
+    help = 'Creates fake clients, users, and packages'
 
     def handle(self, *args, **options):
-        count = options['count']
-        packages = PackageFactory.create_batch(count)
-        self.stdout.write(self.style.SUCCESS(f'Successfully created {len(packages)} packages'))
+        self.stdout.write('Creating 10 fake clients and users...')
+        clients = ClientFactory.create_batch(10)
+        self.stdout.write(self.style.SUCCESS(f'Successfully created {len(clients)} clients and users.'))
+
+        self.stdout.write('Creating 100 fake packages...')
+        packages = []
+        for _ in range(100):
+            client = random.choice(clients)
+            package = PackageFactory(client=client)
+            packages.append(package)
+        
+        self.stdout.write(self.style.SUCCESS(f'Successfully created {len(packages)} packages.'))

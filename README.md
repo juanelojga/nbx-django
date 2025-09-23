@@ -24,21 +24,15 @@ This is a Django project for managing packages.
 
 ## Creating Fake Data
 
-To create fake packages for testing purposes, you can use the `create_fake_packages` management command.
+To create fake clients, users, and packages for testing purposes, you can use the `create_fake_packages` management command.
 
 Usage:
 
 ```bash
-python nbxdjango/manage.py create_fake_packages <count>
+python nbxdjango/manage.py create_fake_packages
 ```
 
-Replace `<count>` with the number of fake packages you want to create.
-
-Example:
-
-```bash
-python nbxdjango/manage.py create_fake_packages 10
-```
+This command will create 10 fake clients (each with an associated user) and 100 fake packages, randomly assigned to these clients.
 
 ## Creating a Superuser Non-Interactively
 
