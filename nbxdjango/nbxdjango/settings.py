@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import datetime
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -143,3 +144,5 @@ AUTHENTICATION_BACKENDS = [
     'packagehandling.authentication.EmailBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+JWT_REFRESH_EXPIRATION_DELTA = datetime.timedelta(days=7)

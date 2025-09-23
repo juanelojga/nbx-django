@@ -7,7 +7,8 @@ from graphene_django import DjangoObjectType
 from graphql import GraphQLError
 from graphql_jwt.shortcuts import get_token
 from graphql_jwt import utils
-from graphql_jwt import settings
+from django.conf import settings as django_settings
+from datetime import timedelta
 from .models import Package, Client
 
 class UserType(DjangoObjectType):
@@ -124,7 +125,12 @@ class EmailAuth(graphene.Mutation):
             raise GraphQLError("Invalid credentials")
 
         token = get_token(user)
-        return EmailAuth(token=token, payload=utils.jwt_payload(user), refreshExpiresIn=settings.JWT_REFRESH_EXPIRATION_DELTA.total_seconds())
+        refresh_delta = getattr(django_settings, "JWT_REFRESH_EXPIRATION_DELTA", timedelta(days=7))
+        return EmailAuth(
+            token=token,
+            payload=utils.jwt_payload(user),
+            refreshExpiresIn=int(refresh_delta.total_seconds()),
+        )
 
 class Mutation(graphene.ObjectType):
     token_auth = graphql_jwt.ObtainJSONWebToken.Field()
