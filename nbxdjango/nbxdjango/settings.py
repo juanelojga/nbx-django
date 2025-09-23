@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import datetime
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,14 +32,15 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'packagehandling',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'packagehandling',
     'graphene_django',
+    'graphql_jwt',
 ]
 
 MIDDLEWARE = [
@@ -128,6 +130,19 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+AUTH_USER_MODEL = 'packagehandling.customuser'
+
 GRAPHENE = {
-    "SCHEMA": "packagehandling.schema.schema"
+    "SCHEMA": "packagehandling.schema.schema",
+    "MIDDLEWARE": [
+        "graphql_jwt.middleware.JSONWebTokenMiddleware",
+    ],
 }
+
+AUTHENTICATION_BACKENDS = [
+    'graphql_jwt.backends.JSONWebTokenBackend',
+    'packagehandling.authentication.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+JWT_REFRESH_EXPIRATION_DELTA = datetime.timedelta(days=7)
