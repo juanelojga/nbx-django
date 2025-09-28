@@ -18,6 +18,8 @@ class Query(graphene.ObjectType):
         return user
 
     def resolve_all_clients(root, info, page=1, page_size=10):
+        if page_size not in [10, 20, 50, 100]:
+            raise ValueError("Invalid page_size. Valid values are 10, 20, 50, 100.")
         if not info.context.user.is_superuser:
             raise PermissionDenied()
         start = (page - 1) * page_size
@@ -33,6 +35,8 @@ class Query(graphene.ObjectType):
         return Client.objects.get(pk=id)
 
     def resolve_all_packages(root, info, page=1, page_size=10):
+        if page_size not in [10, 20, 50, 100]:
+            raise ValueError("Invalid page_size. Valid values are 10, 20, 50, 100.")
         user = info.context.user
         start = (page - 1) * page_size
         end = start + page_size

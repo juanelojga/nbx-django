@@ -40,8 +40,8 @@ class TestQueries:
         ClientFactory.create_batch(20)
         info = Mock()
         info.context.user = superuser
-        clients = Query.resolve_all_clients(None, info, page=2, page_size=5)
-        assert len(clients) == 5
+        clients = Query.resolve_all_clients(None, info, page=2, page_size=10)
+        assert len(clients) == 10
 
     def test_resolve_client_as_superuser(self):
         superuser = UserFactory(is_superuser=True)
@@ -99,8 +99,27 @@ class TestQueries:
         PackageFactory.create_batch(20, client=client)
         info = Mock()
         info.context.user = superuser
-        packages = Query.resolve_all_packages(None, info, page=2, page_size=5)
-        assert len(packages) == 5
+        packages = Query.resolve_all_packages(None, info, page=2, page_size=10)
+        assert len(packages) == 10
+
+    def test_resolve_all_packages_as_client_pagination(self):
+        user = UserFactory()
+        client = ClientFactory(user=user)
+        PackageFactory.create_batch(20, client=client)
+        other_client = ClientFactory()
+        PackageFactory.create_batch(5, client=other_client)
+        info = Mock()
+        info.context.user = user
+        packages = Query.resolve_all_packages(None, info, page=2, page_size=10)
+        assert len(packages) == 10
+
+    def test_resolve_all_packages_invalid_page_size(self):
+        superuser = UserFactory(is_superuser=True)
+        info = Mock()
+        info.context.user = superuser
+        with pytest.raises(ValueError):
+            Query.resolve_all_packages(None, info, page_size=15)
+
     def test_resolve_package_as_superuser(self):
         superuser = UserFactory(is_superuser=True)
         client = ClientFactory()
