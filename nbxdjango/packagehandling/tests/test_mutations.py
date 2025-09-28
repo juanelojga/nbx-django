@@ -62,6 +62,38 @@ class TestMutations:
                 phone_number="0987654321"
             )
 
+    def test_create_client_inactive_user(self):
+        superuser = UserFactory(is_superuser=True)
+        info = Mock()
+        info.context.user = superuser
+
+        mutation = CreateClient()
+        result = mutation.mutate(
+            info,
+            first_name="Test",
+            last_name="Client",
+            email="testclient@example.com",
+            password="password",
+            identification_number="12345",
+            state="CA",
+            city="LA",
+            main_street="Main",
+            secondary_street="Secondary",
+            building_number="123",
+            mobile_phone_number="1234567890",
+            phone_number="0987654321"
+        )
+
+        assert not result.client.user.is_active
+
+        factory = RequestFactory()
+        request = factory.post('/graphql/')
+        info.context = request
+
+        auth_mutation = EmailAuth()
+        with pytest.raises(GraphQLError):
+            auth_mutation.mutate(info, email="testclient@example.com", password="password")
+
     def test_email_auth_success(self):
         user = UserFactory()
         user.set_password("password")

@@ -34,7 +34,7 @@ class CreateClient(graphene.Mutation):
             raise PermissionDenied()
 
         User = get_user_model()
-        user = User.objects.create_user(username=email, email=email, password=password)
+        user = User.objects.create_user(username=email, email=email, password=password, is_active=False)
 
         client = Client(
             user=user,
