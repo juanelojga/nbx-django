@@ -5,7 +5,7 @@ from .types import PackageType, ClientType, UserType
 
 
 class Query(graphene.ObjectType):
-    all_packages = graphene.List(PackageType)
+    all_packages = graphene.List(PackageType, page=graphene.Int(), page_size=graphene.Int())
     package = graphene.Field(PackageType, id=graphene.Int())
     all_clients = graphene.List(ClientType, page=graphene.Int(), page_size=graphene.Int())
     client = graphene.Field(ClientType, id=graphene.Int())
@@ -32,12 +32,15 @@ class Query(graphene.ObjectType):
             raise PermissionDenied()
         return Client.objects.get(pk=id)
 
-    def resolve_all_packages(root, info):
+    def resolve_all_packages(root, info, page=1, page_size=10):
         user = info.context.user
+        start = (page - 1) * page_size
+        end = start + page_size
+
         if user.is_superuser:
-            return Package.objects.all()
+            return Package.objects.all()[start:end]
         if hasattr(user, 'client'):
-            return Package.objects.filter(client=user.client)
+            return Package.objects.filter(client=user.client)[start:end]
         return Package.objects.none()
 
     def resolve_package(root, info, id):

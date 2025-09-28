@@ -93,6 +93,14 @@ class TestQueries:
         packages = Query.resolve_all_packages(None, info)
         assert packages.count() == 0
 
+    def test_resolve_all_packages_pagination(self):
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory()
+        PackageFactory.create_batch(20, client=client)
+        info = Mock()
+        info.context.user = superuser
+        packages = Query.resolve_all_packages(None, info, page=2, page_size=5)
+        assert len(packages) == 5
     def test_resolve_package_as_superuser(self):
         superuser = UserFactory(is_superuser=True)
         client = ClientFactory()
