@@ -35,6 +35,14 @@ class TestQueries:
         with pytest.raises(PermissionDenied):
             Query.resolve_all_clients(None, info)
 
+    def test_resolve_all_clients_pagination(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory.create_batch(20)
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, page=2, page_size=5)
+        assert len(clients) == 5
+
     def test_resolve_client_as_superuser(self):
         superuser = UserFactory(is_superuser=True)
         client = ClientFactory()

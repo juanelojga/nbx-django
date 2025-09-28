@@ -7,7 +7,7 @@ from .types import PackageType, ClientType, UserType
 class Query(graphene.ObjectType):
     all_packages = graphene.List(PackageType)
     package = graphene.Field(PackageType, id=graphene.Int())
-    all_clients = graphene.List(ClientType)
+    all_clients = graphene.List(ClientType, page=graphene.Int(), page_size=graphene.Int())
     client = graphene.Field(ClientType, id=graphene.Int())
     me = graphene.Field(UserType)
 
@@ -17,10 +17,12 @@ class Query(graphene.ObjectType):
             return None
         return user
 
-    def resolve_all_clients(root, info):
+    def resolve_all_clients(root, info, page=1, page_size=10):
         if not info.context.user.is_superuser:
             raise PermissionDenied()
-        return Client.objects.all()
+        start = (page - 1) * page_size
+        end = start + page_size
+        return Client.objects.all()[start:end]
 
     def resolve_client(root, info, id):
         user = info.context.user
