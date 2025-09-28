@@ -89,6 +89,23 @@ class UpdateClient(graphene.Mutation):
         return UpdateClient(client=client)
 
 
+class DeleteClient(graphene.Mutation):
+    class Arguments:
+        id = graphene.ID(required=True)
+
+    ok = graphene.Boolean()
+
+    def mutate(self, info, id):
+        user = info.context.user
+        if not user.is_superuser:
+            raise PermissionDenied()
+
+        client = Client.objects.get(pk=id)
+        client.delete()
+
+        return DeleteClient(ok=True)
+
+
 class EmailAuth(graphene.Mutation):
     token = graphene.String()
     payload = GenericScalar()
@@ -118,4 +135,5 @@ class Mutation(graphene.ObjectType):
     refresh_token = graphql_jwt.Refresh.Field()
     create_client = CreateClient.Field()
     update_client = UpdateClient.Field()
+    delete_client = DeleteClient.Field()
     email_auth = EmailAuth.Field()

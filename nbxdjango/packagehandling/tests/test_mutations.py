@@ -2,8 +2,9 @@
 import pytest
 from django.core.exceptions import PermissionDenied
 from graphql import GraphQLError
-from packagehandling.schema.mutations import CreateClient, EmailAuth, UpdateClient
+from packagehandling.schema.mutations import CreateClient, EmailAuth, UpdateClient, DeleteClient
 from packagehandling.factories import UserFactory, ClientFactory
+from packagehandling.models import Client
 from unittest.mock import Mock
 from django.contrib.auth import get_user_model
 
@@ -135,3 +136,26 @@ class TestMutations:
         result = mutation.mutate(info, id=client.id, email="new@email.com")
 
         assert result.client.email != "new@email.com"
+
+
+    def test_delete_client_as_superuser(self):
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory()
+        info = Mock()
+        info.context.user = superuser
+
+        mutation = DeleteClient()
+        result = mutation.mutate(info, id=client.id)
+
+        assert result.ok
+        assert not Client.objects.filter(id=client.id).exists()
+
+    def test_delete_client_as_regular_user(self):
+        user = UserFactory()
+        client = ClientFactory()
+        info = Mock()
+        info.context.user = user
+
+        mutation = DeleteClient()
+        with pytest.raises(PermissionDenied):
+            mutation.mutate(info, id=client.id)
