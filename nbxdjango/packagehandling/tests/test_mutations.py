@@ -2,8 +2,8 @@
 import pytest
 from django.core.exceptions import PermissionDenied
 from graphql import GraphQLError
-from packagehandling.schema.mutations import CreateClient, EmailAuth
-from packagehandling.factories import UserFactory
+from packagehandling.schema.mutations import CreateClient, EmailAuth, UpdateClient
+from packagehandling.factories import UserFactory, ClientFactory
 from unittest.mock import Mock
 from django.contrib.auth import get_user_model
 
@@ -90,3 +90,48 @@ class TestMutations:
         mutation = EmailAuth()
         with pytest.raises(GraphQLError):
             mutation.mutate(info, email=user.email, password="wrongpassword")
+
+
+    def test_update_client_as_superuser(self):
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory()
+        info = Mock()
+        info.context.user = superuser
+
+        mutation = UpdateClient()
+        result = mutation.mutate(info, id=client.id, first_name="New Name")
+
+        assert result.client.first_name == "New Name"
+
+    def test_update_client_as_owner(self):
+        user = UserFactory()
+        client = ClientFactory(user=user)
+        info = Mock()
+        info.context.user = user
+
+        mutation = UpdateClient()
+        result = mutation.mutate(info, id=client.id, first_name="New Name")
+
+        assert result.client.first_name == "New Name"
+
+    def test_update_client_as_other_user(self):
+        user1 = UserFactory()
+        client = ClientFactory(user=user1)
+        user2 = UserFactory()
+        info = Mock()
+        info.context.user = user2
+
+        mutation = UpdateClient()
+        with pytest.raises(PermissionDenied):
+            mutation.mutate(info, id=client.id, first_name="New Name")
+
+    def test_update_client_email_and_user_not_updated(self):
+        user = UserFactory()
+        client = ClientFactory(user=user)
+        info = Mock()
+        info.context.user = user
+
+        mutation = UpdateClient()
+        result = mutation.mutate(info, id=client.id, email="new@email.com")
+
+        assert result.client.email != "new@email.com"

@@ -55,6 +55,40 @@ class CreateClient(graphene.Mutation):
         return CreateClient(client=client)
 
 
+class UpdateClient(graphene.Mutation):
+    class Arguments:
+        id = graphene.ID(required=True)
+        first_name = graphene.String()
+        last_name = graphene.String()
+        identification_number = graphene.String()
+        state = graphene.String()
+        city = graphene.String()
+        main_street = graphene.String()
+        secondary_street = graphene.String()
+        building_number = graphene.String()
+        mobile_phone_number = graphene.String()
+        phone_number = graphene.String()
+
+    client = graphene.Field(lambda: ClientType)
+
+    def mutate(self, info, id, **kwargs):
+        user = info.context.user
+        client = Client.objects.get(pk=id)
+
+        if not user.is_superuser and client.user != user:
+            raise PermissionDenied()
+
+        kwargs.pop('email', None)
+        kwargs.pop('user', None)
+
+        for key, value in kwargs.items():
+            setattr(client, key, value)
+
+        client.save()
+
+        return UpdateClient(client=client)
+
+
 class EmailAuth(graphene.Mutation):
     token = graphene.String()
     payload = GenericScalar()
@@ -83,4 +117,5 @@ class Mutation(graphene.ObjectType):
     verify_token = graphql_jwt.Verify.Field()
     refresh_token = graphql_jwt.Refresh.Field()
     create_client = CreateClient.Field()
+    update_client = UpdateClient.Field()
     email_auth = EmailAuth.Field()
