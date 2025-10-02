@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import datetime
 
+import os
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'graphene_django',
     'graphql_jwt',
+    'anymail',
 ]
 
 MIDDLEWARE = [
@@ -146,3 +149,12 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 JWT_REFRESH_EXPIRATION_DELTA = datetime.timedelta(days=7)
+
+EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
+
+ANYMAIL = {
+    "MAILGUN_API_KEY": os.environ.get("MAILGUN_API_KEY"),
+    "MAILGUN_SENDER_DOMAIN": os.environ.get("MAILGUN_SENDER_DOMAIN"),
+}
+
+DEFAULT_FROM_EMAIL = "noreply@yourdomain.com"

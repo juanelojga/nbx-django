@@ -22,6 +22,53 @@ This is a Django project for managing packages.
     python nbxdjango/manage.py runserver
     ```
 
+## Email Setup (Mailgun)
+
+This project uses Mailgun for sending emails. Follow these steps to configure it.
+
+### 1. Install Required Packages
+
+Install `django-anymail` (with Mailgun support) and `python-dotenv`.
+
+```bash
+pip install "django-anymail[mailgun]" python-dotenv
+```
+
+These packages are included in `requirements.txt`.
+
+### 2. Set Environment Variables
+
+Create a `.env` file in the project root directory with your Mailgun credentials:
+
+```
+MAILGUN_API_KEY=your-mailgun-api-key
+MAILGUN_SENDER_DOMAIN=your-mailgun-sender-domain
+```
+
+**Note:** The `.env` file is included in `.gitignore` and should not be committed to version control.
+
+### 3. How It's Configured
+
+-   **`settings.py`**: The `EMAIL_BACKEND` is set to `anymail.backends.mailgun.EmailBackend`. It reads your Mailgun credentials from the environment variables.
+-   **`manage.py` & `wsgi.py`**: These files are configured to load the environment variables from the `.env` file using `python-dotenv`.
+
+### 4. Sending Emails
+
+A utility function `send_email(subject, body, recipient_list)` is available in `nbxdjango/packagehandling/utils.py`. You can use it throughout the project to send emails.
+
+**Example Usage (in Django Shell):**
+
+1.  Open the shell:
+    ```bash
+    python nbxdjango/manage.py shell
+    ```
+
+2.  Send an email:
+    ```python
+    from packagehandling.utils import send_email
+    send_email("Test Subject", "This is a test email.", ["recipient@example.com"])
+    ```
+
 ## Creating Fake Data
 
 To create fake clients, users, and packages for testing purposes, you can use the `create_fake_packages` management command.
