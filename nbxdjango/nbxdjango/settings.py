@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'graphene_django',
     'graphql_jwt',
     'anymail',
+    'django_q',
 ]
 
 MIDDLEWARE = [
@@ -158,3 +159,13 @@ ANYMAIL = {
 }
 
 DEFAULT_FROM_EMAIL = "noreply@yourdomain.com"
+
+Q_CLUSTER = {
+    'name': 'DjangORM',
+    'workers': 4,
+    'timeout': 90,
+    'retry': 120,
+    'queue_limit': 50,
+    'bulk': 10,
+    'orm': 'default'
+}

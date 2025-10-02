@@ -1,11 +1,12 @@
-from django.core.mail import send_mail
 from django.conf import settings
+from django_q.tasks import async_task
 
 def send_email(subject, body, recipient_list):
     """
-    A utility function to send emails.
+    A utility function to send emails asynchronously.
     """
-    send_mail(
+    async_task(
+        'django.core.mail.send_mail',
         subject=subject,
         message=body,
         from_email=settings.DEFAULT_FROM_EMAIL,

@@ -22,39 +22,60 @@ This is a Django project for managing packages.
     python nbxdjango/manage.py runserver
     ```
 
-## Email Setup (Mailgun)
+## Asynchronous Email Setup (Django-Q + Mailgun)
 
-This project uses Mailgun for sending emails. Follow these steps to configure it.
+This project uses **Django-Q** to queue emails and **Mailgun** to send them. This prevents slow email API calls from blocking user requests.
 
-### 1. Install Required Packages
+### 1. How It Works
 
-Install `django-anymail` (with Mailgun support) and `python-dotenv`.
+1.  **Queueing:** When an email needs to be sent, the `send_email` utility function adds the email to a queue using `Django-Q` instead of sending it immediately.
+2.  **Processing:** A separate worker process, the `qcluster`, runs in the background, monitoring the queue.
+3.  **Sending:** When the `qcluster` finds a new email task, it processes it and sends the email via the Mailgun API.
+
+### 2. Setup and Configuration
+
+#### a. Install Required Packages
+
+Install `django-q`, `django-anymail` (with Mailgun support), and `python-dotenv`.
 
 ```bash
-pip install "django-anymail[mailgun]" python-dotenv
+pip install django-q "django-anymail[mailgun]" python-dotenv
 ```
 
 These packages are included in `requirements.txt`.
 
-### 2. Set Environment Variables
+#### b. Set Environment Variables
 
-Create a `.env` file in the project root directory with your Mailgun credentials:
+Create a `.env` file in the project root with your Mailgun credentials:
 
 ```
 MAILGUN_API_KEY=your-mailgun-api-key
 MAILGUN_SENDER_DOMAIN=your-mailgun-sender-domain
 ```
 
-**Note:** The `.env` file is included in `.gitignore` and should not be committed to version control.
+An example file is provided at `.env.example`. The `.env` file is ignored by Git.
 
-### 3. How It's Configured
+#### c. Run Migrations
 
--   **`settings.py`**: The `EMAIL_BACKEND` is set to `anymail.backends.mailgun.EmailBackend`. It reads your Mailgun credentials from the environment variables.
--   **`manage.py` & `wsgi.py`**: These files are configured to load the environment variables from the `.env` file using `python-dotenv`.
+Django-Q requires its own database tables to manage the queue. Run the migrations to create them:
+
+```bash
+python nbxdjango/manage.py migrate
+```
+
+### 3. Running the Worker
+
+To process the email queue, you must run the `qcluster` worker. Open a **separate terminal** and run:
+
+```bash
+python nbxdjango/manage.py qcluster
+```
+
+This process must be running for emails to be sent.
 
 ### 4. Sending Emails
 
-A utility function `send_email(subject, body, recipient_list)` is available in `nbxdjango/packagehandling/utils.py`. You can use it throughout the project to send emails.
+The `send_email(subject, body, recipient_list)` utility function in `nbxdjango/packagehandling/utils.py` now automatically queues the email to be sent asynchronously.
 
 **Example Usage (in Django Shell):**
 
@@ -63,11 +84,13 @@ A utility function `send_email(subject, body, recipient_list)` is available in `
     python nbxdjango/manage.py shell
     ```
 
-2.  Send an email:
+2.  Queue an email for sending:
     ```python
     from packagehandling.utils import send_email
     send_email("Test Subject", "This is a test email.", ["recipient@example.com"])
     ```
+
+The email will be added to the queue and sent by the `qcluster` process.
 
 ## Creating Fake Data
 
