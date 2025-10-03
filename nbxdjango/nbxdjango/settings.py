@@ -45,9 +45,11 @@ INSTALLED_APPS = [
     'graphql_jwt',
     'anymail',
     'django_q',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -169,3 +171,6 @@ Q_CLUSTER = {
     'bulk': 10,
     'orm': 'default'
 }
+
+CORS_ALLOWED_ORIGINS =  ["http://localhost:3000"]
+CORS_ALLOW_CREDENTIALS = True
