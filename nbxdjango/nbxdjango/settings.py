@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'graphene_django',
     'graphql_jwt',
+    'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
     'anymail',
     'django_q',
     'corsheaders',
@@ -151,7 +152,9 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-JWT_REFRESH_EXPIRATION_DELTA = datetime.timedelta(days=7)
+GRAPHQL_JWT = {
+    "JWT_REFRESH_EXPIRATION_DELTA": datetime.timedelta(days=7),
+}
 
 EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
 

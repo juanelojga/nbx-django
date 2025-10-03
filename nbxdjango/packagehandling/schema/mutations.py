@@ -8,6 +8,11 @@ from graphql_jwt.shortcuts import get_token
 from graphql_jwt import utils
 from django.conf import settings as django_settings
 from datetime import timedelta
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from ..utils import send_email
+from graphql_jwt.refresh_token.models import RefreshToken
 from ..models import Client
 from .types import ClientType
 
@@ -129,12 +134,96 @@ class EmailAuth(graphene.Mutation):
         )
 
 
+class ForgotPassword(graphene.Mutation):
+    class Arguments:
+        email = graphene.String(required=True)
+
+    ok = graphene.Boolean()
+
+    def mutate(self, info, email):
+        User = get_user_model()
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            # To prevent user enumeration attacks, we don't reveal that the user doesn't exist.
+            return ForgotPassword(ok=True)
+
+        token_generator = PasswordResetTokenGenerator()
+        token = token_generator.make_token(user)
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+
+        # Replace with your frontend URL
+        reset_url = f"http://localhost:3000/reset-password?uid={uidb64}&token={token}"
+
+        send_email(
+            subject="Reset Your Password",
+            body=f"Click the following link to reset your password: {reset_url}",
+            recipient_list=[user.email]
+        )
+
+        return ForgotPassword(ok=True)
+
+
+class ResetPassword(graphene.Mutation):
+    class Arguments:
+        uidb64 = graphene.String(required=True)
+        token = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    ok = graphene.Boolean()
+
+    def mutate(self, info, uidb64, token, password):
+        User = get_user_model()
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        token_generator = PasswordResetTokenGenerator()
+        if user is not None and token_generator.check_token(user, token):
+            user.set_password(password)
+            user.save()
+            return ResetPassword(ok=True)
+        else:
+            # Invalid token or user
+            raise GraphQLError("Invalid password reset link.")
+
+
+from graphql_jwt.refresh_token.models import RefreshToken
+
+class CustomRevokeToken(graphene.Mutation):
+    revoked = graphene.Boolean()
+
+    @classmethod
+    def mutate(cls, root, info):
+        from graphql_jwt.settings import jwt_settings
+        user = info.context.user
+        if not user.is_authenticated:
+            raise GraphQLError("User is not authenticated.")
+
+        cookie_name = jwt_settings.JWT_REFRESH_TOKEN_COOKIE_NAME
+        refresh_token_str = info.context.COOKIES.get(cookie_name)
+
+        if not refresh_token_str:
+            raise GraphQLError("Refresh token not found in cookies.")
+
+        try:
+            refresh_token = RefreshToken.objects.get(token=refresh_token_str, user=user)
+            refresh_token.revoke()
+            return CustomRevokeToken(revoked=True)
+        except RefreshToken.DoesNotExist:
+            raise GraphQLError("Refresh token not found.")
+
+
 class Mutation(graphene.ObjectType):
     token_auth = graphql_jwt.ObtainJSONWebToken.Field()
     verify_token = graphql_jwt.Verify.Field()
     refresh_token = graphql_jwt.Refresh.Field()
-    revoke_token = graphql_jwt.Revoke.Field()
+    revoke_token = CustomRevokeToken.Field()
     create_client = CreateClient.Field()
     update_client = UpdateClient.Field()
     delete_client = DeleteClient.Field()
     email_auth = EmailAuth.Field()
+    forgot_password = ForgotPassword.Field()
+    reset_password = ResetPassword.Field()

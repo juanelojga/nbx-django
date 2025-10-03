@@ -2,13 +2,19 @@
 import pytest
 from django.core.exceptions import PermissionDenied
 from graphql import GraphQLError
-from packagehandling.schema.mutations import CreateClient, EmailAuth, UpdateClient, DeleteClient
+from packagehandling.schema.mutations import CreateClient, EmailAuth, UpdateClient, DeleteClient, ForgotPassword, ResetPassword, CustomRevokeToken
 from packagehandling.factories import UserFactory, ClientFactory
 from packagehandling.models import Client
 from unittest.mock import Mock
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 
 from django.test import RequestFactory
+from unittest.mock import patch
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from graphql_jwt.refresh_token.models import RefreshToken
 
 @pytest.mark.django_db
 class TestMutations:
@@ -191,3 +197,88 @@ class TestMutations:
         mutation = DeleteClient()
         with pytest.raises(PermissionDenied):
             mutation.mutate(info, id=client.id)
+
+    @patch('packagehandling.schema.mutations.send_email')
+    def test_forgot_password_success(self, mock_send_email):
+        user = UserFactory()
+        info = Mock()
+
+        mutation = ForgotPassword()
+        result = mutation.mutate(info, email=user.email)
+
+        assert result.ok
+        mock_send_email.assert_called_once()
+        args, kwargs = mock_send_email.call_args
+        assert kwargs['subject'] == "Reset Your Password"
+        assert user.email in kwargs['recipient_list']
+
+    @patch('packagehandling.schema.mutations.send_email')
+    def test_forgot_password_nonexistent_email(self, mock_send_email):
+        info = Mock()
+
+        mutation = ForgotPassword()
+        result = mutation.mutate(info, email="nonexistent@example.com")
+
+        assert result.ok
+        mock_send_email.assert_not_called()
+
+    def test_reset_password_success(self):
+        user = UserFactory()
+        user.set_password("old_password")
+        user.save()
+
+        token_generator = PasswordResetTokenGenerator()
+        token = token_generator.make_token(user)
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        new_password = "new_strong_password"
+
+        info = Mock()
+        mutation = ResetPassword()
+        result = mutation.mutate(info, uidb64=uidb64, token=token, password=new_password)
+
+        assert result.ok
+        user.refresh_from_db()
+        assert user.check_password(new_password)
+
+    def test_reset_password_invalid_token(self):
+        user = UserFactory()
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        new_password = "new_strong_password"
+
+        info = Mock()
+        mutation = ResetPassword()
+        with pytest.raises(GraphQLError) as excinfo:
+            mutation.mutate(info, uidb64=uidb64, token="invalid-token", password=new_password)
+        assert "Invalid password reset link." in str(excinfo.value)
+
+        def test_revoke_token_success(self):
+            from graphql_jwt.settings import jwt_settings
+            user = UserFactory()
+            refresh_token = RefreshToken.objects.create(user=user, token="test-token")
+        
+            info = Mock()
+            info.context.user = user
+            info.context.COOKIES = {jwt_settings.JWT_REFRESH_TOKEN_COOKIE_NAME: refresh_token.token}
+        
+            result = CustomRevokeToken.mutate(root=None, info=info)
+        
+            assert result.revoked
+            assert not RefreshToken.objects.filter(token="test-token").exists()
+    def test_revoke_token_no_cookie(self):
+        user = UserFactory()
+        info = Mock()
+        info.context.user = user
+        info.context.COOKIES = {}
+
+        with pytest.raises(GraphQLError) as excinfo:
+            CustomRevokeToken.mutate(root=None, info=info)
+        assert "Refresh token not found in cookies." in str(excinfo.value)
+
+    def test_revoke_token_unauthenticated(self):
+        info = Mock()
+        info.context.user = AnonymousUser()
+        info.context.COOKIES = {}
+
+        with pytest.raises(GraphQLError) as excinfo:
+            CustomRevokeToken.mutate(root=None, info=info)
+        assert "User is not authenticated." in str(excinfo.value)
