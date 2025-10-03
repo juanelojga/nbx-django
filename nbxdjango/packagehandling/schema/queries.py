@@ -1,7 +1,7 @@
 import graphene
 from django.core.exceptions import PermissionDenied
 from ..models import Package, Client
-from .types import PackageType, ClientType, UserType
+from .types import PackageType, ClientType, UserType, MeType
 
 
 class Query(graphene.ObjectType):
@@ -9,7 +9,7 @@ class Query(graphene.ObjectType):
     package = graphene.Field(PackageType, id=graphene.Int())
     all_clients = graphene.List(ClientType, page=graphene.Int(), page_size=graphene.Int())
     client = graphene.Field(ClientType, id=graphene.Int())
-    me = graphene.Field(UserType)
+    me = graphene.Field(MeType)
 
     def resolve_me(root, info):
         user = info.context.user
