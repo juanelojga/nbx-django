@@ -6,8 +6,6 @@ django-q
 django-cors-headers
 graphene-django
 django-graphql-jwt
-pytest
-pytest-django
 flake8==7.*
 black==24.*
 isort==5.*
