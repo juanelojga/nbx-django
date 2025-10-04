@@ -54,3 +54,22 @@ class ClientType(DjangoObjectType):
             "updated_at",
             "user",
         )
+
+
+class MeType(DjangoObjectType):
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "is_superuser", "email")
+
+    first_name = graphene.String()
+    last_name = graphene.String()
+
+    def resolve_first_name(self, info):
+        if hasattr(self, 'client'):
+            return self.client.first_name
+        return None
+
+    def resolve_last_name(self, info):
+        if hasattr(self, 'client'):
+            return self.client.last_name
+        return None

@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import datetime
 
+import os
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,9 +43,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'graphene_django',
     'graphql_jwt',
+    'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
+    'anymail',
+    'django_q',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -145,4 +152,34 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-JWT_REFRESH_EXPIRATION_DELTA = datetime.timedelta(days=7)
+GRAPHQL_JWT = {
+    "JWT_REFRESH_EXPIRATION_DELTA": datetime.timedelta(days=7),
+}
+
+EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
+
+ANYMAIL = {
+    "MAILGUN_API_KEY": os.environ.get("MAILGUN_API_KEY"),
+    "MAILGUN_SENDER_DOMAIN": os.environ.get("MAILGUN_SENDER_DOMAIN"),
+}
+
+DEFAULT_FROM_EMAIL = "noreply@yourdomain.com"
+
+Q_CLUSTER = {
+    'name': 'DjangORM',
+    'workers': 4,
+    'timeout': 90,
+    'retry': 120,
+    'queue_limit': 50,
+    'bulk': 10,
+    'orm': 'default'
+}
+
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    "https://your-web-app.com",
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
+CORS_ALLOW_CREDENTIALS = True
+

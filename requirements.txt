@@ -1,2 +1,6 @@
 Django==4.2
 psycopg2-binary==2.9.9
+django-anymail[mailgun]
+python-dotenv
+django-q
+django-cors-headers

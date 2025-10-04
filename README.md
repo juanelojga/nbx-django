@@ -22,6 +22,76 @@ This is a Django project for managing packages.
     python nbxdjango/manage.py runserver
     ```
 
+## Asynchronous Email Setup (Django-Q + Mailgun)
+
+This project uses **Django-Q** to queue emails and **Mailgun** to send them. This prevents slow email API calls from blocking user requests.
+
+### 1. How It Works
+
+1.  **Queueing:** When an email needs to be sent, the `send_email` utility function adds the email to a queue using `Django-Q` instead of sending it immediately.
+2.  **Processing:** A separate worker process, the `qcluster`, runs in the background, monitoring the queue.
+3.  **Sending:** When the `qcluster` finds a new email task, it processes it and sends the email via the Mailgun API.
+
+### 2. Setup and Configuration
+
+#### a. Install Required Packages
+
+Install `django-q`, `django-anymail` (with Mailgun support), and `python-dotenv`.
+
+```bash
+pip install django-q "django-anymail[mailgun]" python-dotenv
+```
+
+These packages are included in `requirements.txt`.
+
+#### b. Set Environment Variables
+
+Create a `.env` file in the project root with your Mailgun credentials:
+
+```
+MAILGUN_API_KEY=your-mailgun-api-key
+MAILGUN_SENDER_DOMAIN=your-mailgun-sender-domain
+```
+
+An example file is provided at `.env.example`. The `.env` file is ignored by Git.
+
+#### c. Run Migrations
+
+Django-Q requires its own database tables to manage the queue. Run the migrations to create them:
+
+```bash
+python nbxdjango/manage.py migrate
+```
+
+### 3. Running the Worker
+
+To process the email queue, you must run the `qcluster` worker. Open a **separate terminal** and run:
+
+```bash
+python nbxdjango/manage.py qcluster
+```
+
+This process must be running for emails to be sent.
+
+### 4. Sending Emails
+
+The `send_email(subject, body, recipient_list)` utility function in `nbxdjango/packagehandling/utils.py` now automatically queues the email to be sent asynchronously.
+
+**Example Usage (in Django Shell):**
+
+1.  Open the shell:
+    ```bash
+    python nbxdjango/manage.py shell
+    ```
+
+2.  Queue an email for sending:
+    ```python
+    from packagehandling.utils import send_email
+    send_email("Test Subject", "This is a test email.", ["recipient@example.com"])
+    ```
+
+The email will be added to the queue and sent by the `qcluster` process.
+
 ## Creating Fake Data
 
 To create fake clients, users, and packages for testing purposes, you can use the `create_fake_packages` management command.
