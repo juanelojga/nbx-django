@@ -175,5 +175,11 @@ Q_CLUSTER = {
     'orm': 'default'
 }
 
-CORS_ALLOWED_ORIGINS =  ["http://localhost:3000"]
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    "https://your-web-app.com",
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
 CORS_ALLOW_CREDENTIALS = True
+
