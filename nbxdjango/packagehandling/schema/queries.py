@@ -2,17 +2,13 @@ import graphene
 from django.core.exceptions import PermissionDenied
 
 from ..models import Client, Package
-from .types import ClientType, MeType, PackageType, UserType
+from .types import ClientType, MeType, PackageType
 
 
 class Query(graphene.ObjectType):
-    all_packages = graphene.List(
-        PackageType, page=graphene.Int(), page_size=graphene.Int()
-    )
+    all_packages = graphene.List(PackageType, page=graphene.Int(), page_size=graphene.Int())
     package = graphene.Field(PackageType, id=graphene.Int())
-    all_clients = graphene.List(
-        ClientType, page=graphene.Int(), page_size=graphene.Int()
-    )
+    all_clients = graphene.List(ClientType, page=graphene.Int(), page_size=graphene.Int())
     client = graphene.Field(ClientType, id=graphene.Int())
     me = graphene.Field(MeType)
 

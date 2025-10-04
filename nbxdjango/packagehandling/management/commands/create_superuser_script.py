@@ -14,13 +14,7 @@ class Command(BaseCommand):
         password = os.environ.get("DJANGO_SUPERUSER_PASSWORD", "admin")
 
         if User.objects.filter(username=username).exists():
-            self.stdout.write(
-                self.style.WARNING(f'Superuser "{username}" already exists.')
-            )
+            self.stdout.write(self.style.WARNING(f'Superuser "{username}" already exists.'))
         else:
-            User.objects.create_superuser(
-                username=username, email=email, password=password
-            )
-            self.stdout.write(
-                self.style.SUCCESS(f'Successfully created superuser "{username}"')
-            )
+            User.objects.create_superuser(username=username, email=email, password=password)
+            self.stdout.write(self.style.SUCCESS(f'Successfully created superuser "{username}"'))

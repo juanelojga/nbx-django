@@ -23,9 +23,7 @@ def test_customuser_creation():
 
 @pytest.mark.django_db
 def test_customuser_str_method():
-    user = CustomUser.objects.create_user(
-        email="strtest@example.com", password="password123"
-    )
+    user = CustomUser.objects.create_user(email="strtest@example.com", password="password123")
     assert str(user) == "strtest@example.com"
 
 
@@ -33,32 +31,24 @@ def test_customuser_str_method():
 def test_customuser_unique_email_constraint():
     CustomUser.objects.create_user(email="unique@example.com", password="password123")
     with pytest.raises(IntegrityError):
-        CustomUser.objects.create_user(
-            email="unique@example.com", password="anotherpassword"
-        )
+        CustomUser.objects.create_user(email="unique@example.com", password="anotherpassword")
 
 
 @pytest.mark.django_db
 def test_customuser_username_nullable():
-    user = CustomUser.objects.create_user(
-        email="nullable@example.com", password="password123"
-    )
+    user = CustomUser.objects.create_user(email="nullable@example.com", password="password123")
     assert user.username is None
 
 
 @pytest.mark.django_db
 def test_customuser_username_blank():
-    user = CustomUser.objects.create_user(
-        email="blank@example.com", password="password123", username=""
-    )
+    user = CustomUser.objects.create_user(email="blank@example.com", password="password123", username="")
     assert user.username == ""
 
 
 @pytest.mark.django_db
 def test_customuser_unique_username_constraint():
-    CustomUser.objects.create_user(
-        email="user1@example.com", password="password123", username="unique_user"
-    )
+    CustomUser.objects.create_user(email="user1@example.com", password="password123", username="unique_user")
     with pytest.raises(IntegrityError):
         CustomUser.objects.create_user(
             email="user2@example.com",
@@ -78,6 +68,4 @@ def test_customuser_create_superuser():
     assert superuser.is_active is True
     assert superuser.is_staff is True
     assert superuser.is_superuser is True
-    assert (
-        superuser.username is None
-    )  # username should be None by default when not provided
+    assert superuser.username is None  # username should be None by default when not provided

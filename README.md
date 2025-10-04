@@ -148,6 +148,10 @@ isort .
 ### Type checking
 mypy .
 
+### Precommit Hook
+pre-commit install
+pre-commit run --all-file
+
 ## Creating a Superuser Non-Interactively
 
 To create a superuser non-interactively, you can use the `create_superuser_script` management command. This method is ideal for automated tasks and deployment scripts as it does not require manual input.

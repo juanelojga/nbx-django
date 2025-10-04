@@ -105,9 +105,7 @@ class TestMutations:
 
         auth_mutation = EmailAuth()
         with pytest.raises(GraphQLError):
-            auth_mutation.mutate(
-                info, email="testclient@example.com", password="password"
-            )
+            auth_mutation.mutate(info, email="testclient@example.com", password="password")
 
     def test_email_auth_success(self):
         user = UserFactory()
@@ -241,9 +239,7 @@ class TestMutations:
 
         info = Mock()
         mutation = ResetPassword()
-        result = mutation.mutate(
-            info, uidb64=uidb64, token=token, password=new_password
-        )
+        result = mutation.mutate(info, uidb64=uidb64, token=token, password=new_password)
 
         assert result.ok
         user.refresh_from_db()
@@ -257,9 +253,7 @@ class TestMutations:
         info = Mock()
         mutation = ResetPassword()
         with pytest.raises(GraphQLError) as excinfo:
-            mutation.mutate(
-                info, uidb64=uidb64, token="invalid-token", password=new_password
-            )
+            mutation.mutate(info, uidb64=uidb64, token="invalid-token", password=new_password)
         assert "Invalid password reset link." in str(excinfo.value)
 
         def test_revoke_token_success(self):
@@ -270,9 +264,7 @@ class TestMutations:
 
             info = Mock()
             info.context.user = user
-            info.context.COOKIES = {
-                jwt_settings.JWT_REFRESH_TOKEN_COOKIE_NAME: refresh_token.token
-            }
+            info.context.COOKIES = {jwt_settings.JWT_REFRESH_TOKEN_COOKIE_NAME: refresh_token.token}
 
             result = CustomRevokeToken.mutate(root=None, info=info)
 

@@ -6,9 +6,7 @@ from packagehandling.models.user import CustomUser
 
 @pytest.mark.django_db
 def test_client_creation():
-    user = CustomUser.objects.create_user(
-        email="client@example.com", password="password123"
-    )
+    user = CustomUser.objects.create_user(email="client@example.com", password="password123")
     client = Client.objects.create(
         user=user,
         first_name="John",
@@ -41,9 +39,7 @@ def test_client_creation():
 
 @pytest.mark.django_db
 def test_client_full_name_property():
-    user = CustomUser.objects.create_user(
-        email="client2@example.com", password="password123"
-    )
+    user = CustomUser.objects.create_user(email="client2@example.com", password="password123")
     client = Client.objects.create(
         user=user,
         first_name="Jane",
@@ -63,9 +59,7 @@ def test_client_full_name_property():
 
 @pytest.mark.django_db
 def test_client_str_method():
-    user = CustomUser.objects.create_user(
-        email="client3@example.com", password="password123"
-    )
+    user = CustomUser.objects.create_user(email="client3@example.com", password="password123")
     client = Client.objects.create(
         user=user,
         first_name="Peter",
@@ -85,9 +79,7 @@ def test_client_str_method():
 
 @pytest.mark.django_db
 def test_client_user_one_to_one_constraint():
-    user1 = CustomUser.objects.create_user(
-        email="user1@example.com", password="password123"
-    )
+    user1 = CustomUser.objects.create_user(email="user1@example.com", password="password123")
     Client.objects.create(
         user=user1,
         first_name="Client",

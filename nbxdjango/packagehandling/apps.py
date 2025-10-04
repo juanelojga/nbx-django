@@ -6,4 +6,4 @@ class PackagehandlingConfig(AppConfig):
     name = "packagehandling"
 
     def ready(self):
-        import packagehandling.signals
+        import packagehandling.signals  # noqa

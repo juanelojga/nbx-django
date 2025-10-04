@@ -56,9 +56,7 @@ class CreateClient(graphene.Mutation):
             raise PermissionDenied()
 
         User = get_user_model()
-        user = User.objects.create_user(
-            username=email, email=email, password=password, is_active=False
-        )
+        user = User.objects.create_user(username=email, email=email, password=password, is_active=False)
 
         client = Client(
             user=user,
@@ -145,9 +143,7 @@ class EmailAuth(graphene.Mutation):
             raise GraphQLError("Invalid credentials")
 
         token = get_token(user)
-        refresh_delta = getattr(
-            django_settings, "JWT_REFRESH_EXPIRATION_DELTA", timedelta(days=7)
-        )
+        refresh_delta = getattr(django_settings, "JWT_REFRESH_EXPIRATION_DELTA", timedelta(days=7))
         return EmailAuth(
             token=token,
             payload=utils.jwt_payload(user),
@@ -209,9 +205,6 @@ class ResetPassword(graphene.Mutation):
         else:
             # Invalid token or user
             raise GraphQLError("Invalid password reset link.")
-
-
-from graphql_jwt.refresh_token.models import RefreshToken
 
 
 class CustomRevokeToken(graphene.Mutation):

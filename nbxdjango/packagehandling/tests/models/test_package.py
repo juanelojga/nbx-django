@@ -8,9 +8,7 @@ from packagehandling.models.user import CustomUser
 
 @pytest.fixture
 def create_client():
-    user = CustomUser.objects.create_user(
-        email="client_package@example.com", password="password123"
-    )
+    user = CustomUser.objects.create_user(email="client_package@example.com", password="password123")
     client = Client.objects.create(
         user=user,
         first_name="Package",

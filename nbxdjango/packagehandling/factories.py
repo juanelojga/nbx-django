@@ -45,9 +45,7 @@ class PackageFactory(factory.django.DjangoModelFactory):
 
     barcode = factory.Faker("ean", length=13)
     courier = factory.Faker("company")
-    other_courier = factory.LazyFunction(
-        lambda: fake.company() if random.random() < 0.3 else None
-    )
+    other_courier = factory.LazyFunction(lambda: fake.company() if random.random() < 0.3 else None)
     length = factory.Faker(
         "pyfloat",
         left_digits=2,
