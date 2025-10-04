@@ -2,25 +2,81 @@
 
 This is a Django project for managing packages.
 
-## Getting Started
+## Local Development Setup
 
-1.  Install the dependencies:
+### 1. Prerequisites
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+*   Python 3.11
+*   PostgreSQL
 
-2.  Run the database migrations:
+### 2. Initial Setup
 
-    ```bash
-    python nbxdjango/manage.py migrate
-    ```
+a. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd nbx-django
+   ```
 
-3.  Start the development server:
+b. **Create a virtual environment and install dependencies:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
+   ```
 
-    ```bash
-    python nbxdjango/manage.py runserver
-    ```
+c. **Set up environment variables:**
+
+   Create a `.env` file in the project root by copying the example file:
+   ```bash
+   cp .env.example .env
+   ```
+
+   Now, edit the `.env` file and fill in the required values:
+   *   `SECRET_KEY`: A new secret key for your local environment.
+   *   `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`: Your local PostgreSQL connection details.
+   *   `MAILGUN_API_KEY`, `MAILGUN_SENDER_DOMAIN`: Your Mailgun credentials (optional, for email sending).
+
+### 3. Database Setup
+
+Run the database migrations to set up your local database schema:
+```bash
+python nbxdjango/manage.py migrate
+```
+
+### 4. Running the Development Server
+
+Start the Django development server:
+```bash
+python nbxdjango/manage.py runserver
+```
+The application will be available at `http://127.0.0.1:8000/`.
+
+The interactive GraphQL interface is available at `http://127.0.0.1:8000/graphql` and is automatically enabled in the development environment (`DEBUG=True`).
+
+## Deployment (Railway)
+
+This project is configured for continuous deployment to [Railway](https://railway.app/) via GitHub Actions.
+
+### How it Works
+
+1.  **CI/CD Pipeline**: The workflow is defined in `.github/workflows/ci.yml`.
+2.  **Triggers**: A push or merge to the `main` branch will trigger the pipeline.
+3.  **Testing**: The pipeline first installs dependencies, runs database migrations on a test database, and executes the test suite using `pytest`.
+4.  **Deployment**: If the tests pass, the `deploy` job uses the [Railway CLI Action](https://github.com/railwayapp/railway-action) to deploy the application.
+5.  **Release Phase**: Before the new version goes live, Railway runs the `release` command from the `Procfile` (`python nbxdjango/manage.py migrate`) to run production database migrations.
+6.  **Web Process**: The application is served by `gunicorn`, as defined in the `web` command of the `Procfile`.
+
+### Production Environment Variables
+
+The following environment variables must be set in the Railway project settings:
+
+*   `DATABASE_URL`: Provided by the Railway PostgreSQL service.
+*   `SECRET_KEY`: A strong, randomly generated secret key.
+*   `ALLOWED_HOSTS`: The domain provided by Railway (e.g., `web-production-xxxx.up.railway.app`).
+*   `DEBUG`: Set to `False`.
+*   `MAILGUN_API_KEY`: Your Mailgun API key.
+*   `MAILGUN_SENDER_DOMAIN`: Your Mailgun sender domain.
 
 ## Asynchronous Email Setup (Django-Q + Mailgun)
 
@@ -111,25 +167,14 @@ This project uses `pytest` with `pytest-django` for testing.
 1.  Install testing dependencies:
 
     ```bash
-    pip install pytest pytest-django
+    pip install -r requirements-dev.txt
     ```
 
-2.  Set the `DJANGO_SETTINGS_MODULE` environment variable and run all tests:
+2.  Run all tests from the `nbxdjango` directory:
 
     ```bash
-    DJANGO_SETTINGS_MODULE=nbxdjango.settings pytest
-    ```
-
-3.  Run tests for a specific app (e.g., `packagehandling`):
-
-    ```bash
-    DJANGO_SETTINGS_MODULE=nbxdjango.settings pytest nbxdjango/packagehandling/tests/
-    ```
-
-4.  Run tests for a specific file (e.g., `test_customuser.py`):
-
-    ```bash
-    DJANGO_SETTINGS_MODULE=nbxdjango.settings pytest nbxdjango/packagehandling/tests/models/test_customuser.py
+    cd nbxdjango
+    pytest
     ```
 
 ## Running Linters Locally
