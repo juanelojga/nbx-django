@@ -27,7 +27,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dummy-ci-secret-key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS: list[str] = []
 
 
 # Application definition
