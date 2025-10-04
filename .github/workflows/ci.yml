@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   pull_request:
@@ -34,7 +34,6 @@ jobs:
           POSTGRES_DB: app_test
         ports:
           - 5432:5432
-        # wait for postgres to be ready
         options: >-
           --health-cmd "pg_isready -U postgres -d app_test"
           --health-interval 10s
@@ -46,12 +45,6 @@ jobs:
       DJANGO_SETTINGS_MODULE: nbxdjango.settings
       PYTHONDONTWRITEBYTECODE: 1
       PYTHONUNBUFFERED: 1
-      DB_NAME: app_test
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_HOST: localhost
-      DB_PORT: 5432
-      # SECRET_KEY can be set here for OSS; for private repos prefer Actions secrets
 
     steps:
       - name: Checkout
@@ -64,9 +57,6 @@ jobs:
           cache: "pip"
           cache-dependency-path: |
             requirements*.txt
-            pyproject.toml
-            setup.cfg
-            setup.py
 
       - name: Install system deps for psycopg
         run: |
@@ -86,10 +76,33 @@ jobs:
             sleep 2
           done
 
-      - name: Django migrations (optional with pytest-django)
+      - name: Django migrations
         run: |
           python nbxdjango/manage.py migrate --noinput
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
-          DJANGO_SETTINGS_MODULE=nbxdjango.settings pytest nbxdjango/packagehandling/tests -q --maxfail=1 --disable-warnings
+          DJANGO_SETTINGS_MODULE=nbxdjango.settings pytest --cov=. --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: true
+
+  deploy:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to Railway
+        uses: railwayapp/railway-action@v1
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: "nbx-django"
