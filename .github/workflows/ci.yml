@@ -83,7 +83,7 @@ jobs:
 
       - name: Django migrations (optional with pytest-django)
         run: |
-          python manage.py migrate --noinput
+          python nbxdjango/manage.py migrate --noinput
 
       - name: Run tests
         run: |
