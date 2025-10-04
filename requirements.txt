@@ -4,3 +4,7 @@ django-anymail[mailgun]
 python-dotenv
 django-q
 django-cors-headers
+flake8==7.*
+black==24.*
+isort==5.*
+mypy==1.*

@@ -1,19 +1,21 @@
-import graphene
-from graphene.types.generic import GenericScalar
-import graphql_jwt
-from django.contrib.auth import get_user_model, authenticate
-from django.core.exceptions import PermissionDenied
-from graphql import GraphQLError
-from graphql_jwt.shortcuts import get_token
-from graphql_jwt import utils
-from django.conf import settings as django_settings
 from datetime import timedelta
+
+import graphene
+import graphql_jwt
+from django.conf import settings as django_settings
+from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.core.exceptions import PermissionDenied
 from django.utils.encoding import force_bytes, force_str
-from ..utils import send_email
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from graphene.types.generic import GenericScalar
+from graphql import GraphQLError
+from graphql_jwt import utils
 from graphql_jwt.refresh_token.models import RefreshToken
+from graphql_jwt.shortcuts import get_token
+
 from ..models import Client
+from ..utils import send_email
 from .types import ClientType
 
 
@@ -34,12 +36,29 @@ class CreateClient(graphene.Mutation):
 
     client = graphene.Field(lambda: ClientType)
 
-    def mutate(self, info, first_name, last_name, email, password, identification_number, state, city, main_street, secondary_street, building_number, mobile_phone_number, phone_number):
+    def mutate(
+        self,
+        info,
+        first_name,
+        last_name,
+        email,
+        password,
+        identification_number,
+        state,
+        city,
+        main_street,
+        secondary_street,
+        building_number,
+        mobile_phone_number,
+        phone_number,
+    ):
         if not info.context.user.is_superuser:
             raise PermissionDenied()
 
         User = get_user_model()
-        user = User.objects.create_user(username=email, email=email, password=password, is_active=False)
+        user = User.objects.create_user(
+            username=email, email=email, password=password, is_active=False
+        )
 
         client = Client(
             user=user,
@@ -83,8 +102,8 @@ class UpdateClient(graphene.Mutation):
         if not user.is_superuser and client.user != user:
             raise PermissionDenied()
 
-        kwargs.pop('email', None)
-        kwargs.pop('user', None)
+        kwargs.pop("email", None)
+        kwargs.pop("user", None)
 
         for key, value in kwargs.items():
             setattr(client, key, value)
@@ -126,7 +145,9 @@ class EmailAuth(graphene.Mutation):
             raise GraphQLError("Invalid credentials")
 
         token = get_token(user)
-        refresh_delta = getattr(django_settings, "JWT_REFRESH_EXPIRATION_DELTA", timedelta(days=7))
+        refresh_delta = getattr(
+            django_settings, "JWT_REFRESH_EXPIRATION_DELTA", timedelta(days=7)
+        )
         return EmailAuth(
             token=token,
             payload=utils.jwt_payload(user),
@@ -158,7 +179,7 @@ class ForgotPassword(graphene.Mutation):
         send_email(
             subject="Reset Your Password",
             body=f"Click the following link to reset your password: {reset_url}",
-            recipient_list=[user.email]
+            recipient_list=[user.email],
         )
 
         return ForgotPassword(ok=True)
@@ -192,12 +213,14 @@ class ResetPassword(graphene.Mutation):
 
 from graphql_jwt.refresh_token.models import RefreshToken
 
+
 class CustomRevokeToken(graphene.Mutation):
     revoked = graphene.Boolean()
 
     @classmethod
     def mutate(cls, root, info):
         from graphql_jwt.settings import jwt_settings
+
         user = info.context.user
         if not user.is_authenticated:
             raise GraphQLError("User is not authenticated.")

@@ -1,8 +1,10 @@
+from unittest.mock import Mock
+
 import pytest
 from django.core.exceptions import PermissionDenied
+from packagehandling.factories import ClientFactory, PackageFactory, UserFactory
 from packagehandling.schema.queries import Query
-from packagehandling.factories import UserFactory, ClientFactory, PackageFactory
-from unittest.mock import Mock
+
 
 @pytest.mark.django_db
 class TestQueries:

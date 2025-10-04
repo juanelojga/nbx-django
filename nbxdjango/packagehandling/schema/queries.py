@@ -1,13 +1,18 @@
 import graphene
 from django.core.exceptions import PermissionDenied
-from ..models import Package, Client
-from .types import PackageType, ClientType, UserType, MeType
+
+from ..models import Client, Package
+from .types import ClientType, MeType, PackageType, UserType
 
 
 class Query(graphene.ObjectType):
-    all_packages = graphene.List(PackageType, page=graphene.Int(), page_size=graphene.Int())
+    all_packages = graphene.List(
+        PackageType, page=graphene.Int(), page_size=graphene.Int()
+    )
     package = graphene.Field(PackageType, id=graphene.Int())
-    all_clients = graphene.List(ClientType, page=graphene.Int(), page_size=graphene.Int())
+    all_clients = graphene.List(
+        ClientType, page=graphene.Int(), page_size=graphene.Int()
+    )
     client = graphene.Field(ClientType, id=graphene.Int())
     me = graphene.Field(MeType)
 
@@ -30,7 +35,7 @@ class Query(graphene.ObjectType):
         user = info.context.user
         if user.is_superuser:
             return Client.objects.get(pk=id)
-        if not hasattr(user, 'client') or user.client.id != id:
+        if not hasattr(user, "client") or user.client.id != id:
             raise PermissionDenied()
         return Client.objects.get(pk=id)
 
@@ -43,7 +48,7 @@ class Query(graphene.ObjectType):
 
         if user.is_superuser:
             return Package.objects.all()[start:end]
-        if hasattr(user, 'client'):
+        if hasattr(user, "client"):
             return Package.objects.filter(client=user.client)[start:end]
         return Package.objects.none()
 
@@ -52,6 +57,6 @@ class Query(graphene.ObjectType):
         package = Package.objects.get(pk=id)
         if user.is_superuser:
             return package
-        if not hasattr(user, 'client') or package.client != user.client:
+        if not hasattr(user, "client") or package.client != user.client:
             raise PermissionDenied()
         return package

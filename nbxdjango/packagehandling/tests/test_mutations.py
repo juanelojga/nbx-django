@@ -1,20 +1,27 @@
+from unittest.mock import Mock, patch
 
 import pytest
-from django.core.exceptions import PermissionDenied
-from graphql import GraphQLError
-from packagehandling.schema.mutations import CreateClient, EmailAuth, UpdateClient, DeleteClient, ForgotPassword, ResetPassword, CustomRevokeToken
-from packagehandling.factories import UserFactory, ClientFactory
-from packagehandling.models import Client
-from unittest.mock import Mock
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
-
-from django.test import RequestFactory
-from unittest.mock import patch
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.http import urlsafe_base64_encode
+from django.core.exceptions import PermissionDenied
+from django.test import RequestFactory
 from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from graphql import GraphQLError
 from graphql_jwt.refresh_token.models import RefreshToken
+from packagehandling.factories import ClientFactory, UserFactory
+from packagehandling.models import Client
+from packagehandling.schema.mutations import (
+    CreateClient,
+    CustomRevokeToken,
+    DeleteClient,
+    EmailAuth,
+    ForgotPassword,
+    ResetPassword,
+    UpdateClient,
+)
+
 
 @pytest.mark.django_db
 class TestMutations:
@@ -38,7 +45,7 @@ class TestMutations:
             secondary_street="Secondary",
             building_number="123",
             mobile_phone_number="1234567890",
-            phone_number="0987654321"
+            phone_number="0987654321",
         )
 
         assert result.client.email == "testclient@example.com"
@@ -65,7 +72,7 @@ class TestMutations:
                 secondary_street="Secondary",
                 building_number="123",
                 mobile_phone_number="1234567890",
-                phone_number="0987654321"
+                phone_number="0987654321",
             )
 
     def test_create_client_inactive_user(self):
@@ -87,18 +94,20 @@ class TestMutations:
             secondary_street="Secondary",
             building_number="123",
             mobile_phone_number="1234567890",
-            phone_number="0987654321"
+            phone_number="0987654321",
         )
 
         assert not result.client.user.is_active
 
         factory = RequestFactory()
-        request = factory.post('/graphql/')
+        request = factory.post("/graphql/")
         info.context = request
 
         auth_mutation = EmailAuth()
         with pytest.raises(GraphQLError):
-            auth_mutation.mutate(info, email="testclient@example.com", password="password")
+            auth_mutation.mutate(
+                info, email="testclient@example.com", password="password"
+            )
 
     def test_email_auth_success(self):
         user = UserFactory()
@@ -106,7 +115,7 @@ class TestMutations:
         user.save()
 
         factory = RequestFactory()
-        request = factory.post('/graphql/')
+        request = factory.post("/graphql/")
 
         info = Mock()
         info.context = request
@@ -121,7 +130,7 @@ class TestMutations:
     def test_email_auth_failure(self):
         user = UserFactory(password="password")
         factory = RequestFactory()
-        request = factory.post('/graphql/')
+        request = factory.post("/graphql/")
 
         info = Mock()
         info.context = request
@@ -129,7 +138,6 @@ class TestMutations:
         mutation = EmailAuth()
         with pytest.raises(GraphQLError):
             mutation.mutate(info, email=user.email, password="wrongpassword")
-
 
     def test_update_client_as_superuser(self):
         superuser = UserFactory(is_superuser=True)
@@ -175,7 +183,6 @@ class TestMutations:
 
         assert result.client.email != "new@email.com"
 
-
     def test_delete_client_as_superuser(self):
         superuser = UserFactory(is_superuser=True)
         client = ClientFactory()
@@ -198,7 +205,7 @@ class TestMutations:
         with pytest.raises(PermissionDenied):
             mutation.mutate(info, id=client.id)
 
-    @patch('packagehandling.schema.mutations.send_email')
+    @patch("packagehandling.schema.mutations.send_email")
     def test_forgot_password_success(self, mock_send_email):
         user = UserFactory()
         info = Mock()
@@ -209,10 +216,10 @@ class TestMutations:
         assert result.ok
         mock_send_email.assert_called_once()
         args, kwargs = mock_send_email.call_args
-        assert kwargs['subject'] == "Reset Your Password"
-        assert user.email in kwargs['recipient_list']
+        assert kwargs["subject"] == "Reset Your Password"
+        assert user.email in kwargs["recipient_list"]
 
-    @patch('packagehandling.schema.mutations.send_email')
+    @patch("packagehandling.schema.mutations.send_email")
     def test_forgot_password_nonexistent_email(self, mock_send_email):
         info = Mock()
 
@@ -234,7 +241,9 @@ class TestMutations:
 
         info = Mock()
         mutation = ResetPassword()
-        result = mutation.mutate(info, uidb64=uidb64, token=token, password=new_password)
+        result = mutation.mutate(
+            info, uidb64=uidb64, token=token, password=new_password
+        )
 
         assert result.ok
         user.refresh_from_db()
@@ -248,22 +257,28 @@ class TestMutations:
         info = Mock()
         mutation = ResetPassword()
         with pytest.raises(GraphQLError) as excinfo:
-            mutation.mutate(info, uidb64=uidb64, token="invalid-token", password=new_password)
+            mutation.mutate(
+                info, uidb64=uidb64, token="invalid-token", password=new_password
+            )
         assert "Invalid password reset link." in str(excinfo.value)
 
         def test_revoke_token_success(self):
             from graphql_jwt.settings import jwt_settings
+
             user = UserFactory()
             refresh_token = RefreshToken.objects.create(user=user, token="test-token")
-        
+
             info = Mock()
             info.context.user = user
-            info.context.COOKIES = {jwt_settings.JWT_REFRESH_TOKEN_COOKIE_NAME: refresh_token.token}
-        
+            info.context.COOKIES = {
+                jwt_settings.JWT_REFRESH_TOKEN_COOKIE_NAME: refresh_token.token
+            }
+
             result = CustomRevokeToken.mutate(root=None, info=info)
-        
+
             assert result.revoked
             assert not RefreshToken.objects.filter(token="test-token").exists()
+
     def test_revoke_token_no_cookie(self):
         user = UserFactory()
         info = Mock()

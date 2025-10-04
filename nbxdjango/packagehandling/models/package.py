@@ -1,5 +1,7 @@
 from django.db import models
+
 from .client import Client
+
 
 class Package(models.Model):
     barcode = models.CharField(max_length=255)
@@ -17,9 +19,7 @@ class Package(models.Model):
     service_price = models.FloatField()
     arrival_date = models.DateField()
     client = models.ForeignKey(
-        Client,
-        on_delete=models.CASCADE,
-        related_name='packages'
+        Client, on_delete=models.CASCADE, related_name="packages"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
