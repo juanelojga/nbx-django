@@ -1,13 +1,15 @@
 import graphene
 from django.contrib.auth import get_user_model
 from graphene_django import DjangoObjectType
-from ..models import Package, Client
+
+from ..models import Client, Package
 
 
 class UserType(DjangoObjectType):
     class Meta:
         model = get_user_model()
         fields = "__all__"
+
 
 class PackageType(DjangoObjectType):
     class Meta:
@@ -65,11 +67,11 @@ class MeType(DjangoObjectType):
     last_name = graphene.String()
 
     def resolve_first_name(self, info):
-        if hasattr(self, 'client'):
+        if hasattr(self, "client"):
             return self.client.first_name
         return None
 
     def resolve_last_name(self, info):
-        if hasattr(self, 'client'):
+        if hasattr(self, "client"):
             return self.client.last_name
         return None

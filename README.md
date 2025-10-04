@@ -132,6 +132,26 @@ This project uses `pytest` with `pytest-django` for testing.
     DJANGO_SETTINGS_MODULE=nbxdjango.settings pytest nbxdjango/packagehandling/tests/models/test_customuser.py
     ```
 
+## Running Linters Locally
+
+To maintain code quality, you can run the following linters and formatters locally:
+
+### Check for style issues
+flake8 .
+
+### Auto-format code
+black .
+
+### Organize imports
+isort .
+
+### Type checking
+mypy .
+
+### Precommit Hook
+pre-commit install
+pre-commit run --all-file
+
 ## Creating a Superuser Non-Interactively
 
 To create a superuser non-interactively, you can use the `create_superuser_script` management command. This method is ideal for automated tasks and deployment scripts as it does not require manual input.
