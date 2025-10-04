@@ -46,6 +46,11 @@ jobs:
       DJANGO_SETTINGS_MODULE: nbxdjango.settings
       PYTHONDONTWRITEBYTECODE: 1
       PYTHONUNBUFFERED: 1
+      DB_NAME: app_test
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
       # SECRET_KEY can be set here for OSS; for private repos prefer Actions secrets
 
     steps:
