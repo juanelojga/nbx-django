@@ -1,2 +1,2 @@
 release: python nbxdjango/manage.py migrate
-web: gunicorn nbxdjango.nbxdjango.wsgi --log-file -
+web: cd nbxdjango && gunicorn nbxdjango.wsgi --log-file -
