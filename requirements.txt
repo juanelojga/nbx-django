@@ -14,3 +14,4 @@ pre-commit==3.*
 gunicorn
 dj-database-url
 whitenoise
+setuptools
