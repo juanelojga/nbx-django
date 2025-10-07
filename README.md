@@ -173,8 +173,8 @@ This project uses `pytest` with `pytest-django` for testing.
 2.  Run all tests from the `nbxdjango` directory:
 
     ```bash
-    cd nbxdjango
-    pytest
+    DJANGO_SETTINGS_MODULE=nbxdjango.settings DATABASE_URL=postgres://myuser:mypassword@localhost:5432/mydatab
+ase pytest nbxdjango/packagehandling/tests/
     ```
 
 ## Running Linters Locally
