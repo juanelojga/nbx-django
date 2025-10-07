@@ -28,7 +28,7 @@ class TestQueries:
         info = Mock()
         info.context.user = superuser
         clients = Query.resolve_all_clients(None, info)
-        assert clients.count() == 3
+        assert len(clients) == 3
 
     def test_resolve_all_clients_as_regular_user(self):
         user = UserFactory()
@@ -44,6 +44,90 @@ class TestQueries:
         info.context.user = superuser
         clients = Query.resolve_all_clients(None, info, page=2, page_size=10)
         assert len(clients) == 10
+
+    def test_resolve_all_clients_invalid_page_size(self):
+        superuser = UserFactory(is_superuser=True)
+        info = Mock()
+        info.context.user = superuser
+        with pytest.raises(ValueError):
+            Query.resolve_all_clients(None, info, page_size=15)
+
+    def test_resolve_all_clients_search_by_first_name(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory(first_name="John", last_name="Doe")
+        ClientFactory(first_name="Jane", last_name="Smith")
+        ClientFactory(first_name="Bob", last_name="Johnson")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, search="John")
+        assert len(clients) == 2  # John Doe and Bob Johnson
+
+    def test_resolve_all_clients_search_by_last_name(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory(first_name="John", last_name="Doe")
+        ClientFactory(first_name="Jane", last_name="Smith")
+        ClientFactory(first_name="Bob", last_name="Doe")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, search="Doe")
+        assert len(clients) == 2
+
+    def test_resolve_all_clients_search_by_email(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory(email="john@example.com")
+        ClientFactory(email="jane@example.com")
+        ClientFactory(email="bob@other.com")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, search="example")
+        assert len(clients) == 2
+
+    def test_resolve_all_clients_search_by_identification_number(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory(identification_number="123456789")
+        ClientFactory(identification_number="987654321")
+        ClientFactory(identification_number="123999999")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, search="123")
+        assert len(clients) == 2
+
+    def test_resolve_all_clients_search_by_mobile_phone(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory(mobile_phone_number="+1234567890")
+        ClientFactory(mobile_phone_number="+9876543210")
+        ClientFactory(mobile_phone_number="+1239999999")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, search="123")
+        assert len(clients) == 2
+
+    def test_resolve_all_clients_search_case_insensitive(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory(first_name="John")
+        ClientFactory(first_name="jane")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, search="JOHN")
+        assert len(clients) == 1
+
+    def test_resolve_all_clients_search_with_pagination(self):
+        superuser = UserFactory(is_superuser=True)
+        for i in range(15):
+            ClientFactory(first_name=f"John{i}")
+        ClientFactory(first_name="Jane")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, search="John", page=1, page_size=10)
+        assert len(clients) == 10
+
+    def test_resolve_all_clients_search_no_results(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory.create_batch(3)
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, search="nonexistent")
+        assert len(clients) == 0
 
     def test_resolve_client_as_superuser(self):
         superuser = UserFactory(is_superuser=True)
