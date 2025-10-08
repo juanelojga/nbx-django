@@ -49,7 +49,7 @@ class TestQueries:
         superuser = UserFactory(is_superuser=True)
         info = Mock()
         info.context.user = superuser
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Invalid page_size"):
             Query.resolve_all_clients(None, info, page_size=15)
 
     def test_resolve_all_clients_search_by_first_name(self):
@@ -128,6 +128,83 @@ class TestQueries:
         info.context.user = superuser
         clients = Query.resolve_all_clients(None, info, search="nonexistent")
         assert len(clients) == 0
+
+    def test_resolve_all_clients_order_by_email(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory(email="charlie@example.com")
+        ClientFactory(email="alice@example.com")
+        ClientFactory(email="bob@example.com")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, order_by="email")
+        assert clients[0].email == "alice@example.com"
+        assert clients[1].email == "bob@example.com"
+        assert clients[2].email == "charlie@example.com"
+
+    def test_resolve_all_clients_order_by_email_desc(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory(email="charlie@example.com")
+        ClientFactory(email="alice@example.com")
+        ClientFactory(email="bob@example.com")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, order_by="-email")
+        assert clients[0].email == "charlie@example.com"
+        assert clients[1].email == "bob@example.com"
+        assert clients[2].email == "alice@example.com"
+
+    def test_resolve_all_clients_order_by_full_name(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory(first_name="Charlie", last_name="Davis")
+        ClientFactory(first_name="Alice", last_name="Brown")
+        ClientFactory(first_name="Bob", last_name="Anderson")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, order_by="full_name")
+        assert clients[0].first_name == "Alice"
+        assert clients[1].first_name == "Bob"
+        assert clients[2].first_name == "Charlie"
+
+    def test_resolve_all_clients_order_by_full_name_desc(self):
+        superuser = UserFactory(is_superuser=True)
+        ClientFactory(first_name="Charlie", last_name="Davis")
+        ClientFactory(first_name="Alice", last_name="Brown")
+        ClientFactory(first_name="Bob", last_name="Anderson")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, order_by="-full_name")
+        assert clients[0].first_name == "Charlie"
+        assert clients[1].first_name == "Bob"
+        assert clients[2].first_name == "Alice"
+
+    def test_resolve_all_clients_order_by_created_at(self):
+        superuser = UserFactory(is_superuser=True)
+        from datetime import datetime, timedelta
+
+        ClientFactory(created_at=datetime.now() - timedelta(days=2))
+        ClientFactory(created_at=datetime.now() - timedelta(days=1))
+        ClientFactory(created_at=datetime.now())
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, order_by="created_at")
+        assert clients[0].created_at < clients[1].created_at < clients[2].created_at
+
+    def test_resolve_all_clients_invalid_order_by(self):
+        superuser = UserFactory(is_superuser=True)
+        info = Mock()
+        info.context.user = superuser
+        with pytest.raises(ValueError, match="Invalid order_by value"):
+            Query.resolve_all_clients(None, info, order_by="invalid_field")
+
+    def test_resolve_all_clients_order_by_with_search_and_pagination(self):
+        superuser = UserFactory(is_superuser=True)
+        for i in range(15):
+            ClientFactory(first_name="John", last_name=f"Name{i:02d}")
+        ClientFactory(first_name="Jane", last_name="Smith")
+        info = Mock()
+        info.context.user = superuser
+        clients = Query.resolve_all_clients(None, info, search="John", order_by="full_name", page=1, page_size=10)
+        assert len(clients) == 10
 
     def test_resolve_client_as_superuser(self):
         superuser = UserFactory(is_superuser=True)
