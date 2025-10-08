@@ -78,3 +78,12 @@ class MeType(DjangoObjectType):
         if hasattr(self, "client"):
             return self.client.last_name
         return None
+
+
+class ClientConnection(graphene.ObjectType):
+    results = graphene.List(ClientType)
+    total_count = graphene.Int()
+    page = graphene.Int()
+    page_size = graphene.Int()
+    has_next = graphene.Boolean()
+    has_previous = graphene.Boolean()

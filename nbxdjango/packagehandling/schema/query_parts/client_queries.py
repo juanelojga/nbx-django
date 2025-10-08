@@ -5,12 +5,12 @@ from django.db.models import Value as V
 from django.db.models.functions import Concat
 
 from ...models import Client
-from ..types import ClientType
+from ..types import ClientConnection, ClientType
 
 
 class ClientQueries(graphene.ObjectType):
-    all_clients = graphene.List(
-        ClientType,
+    all_clients = graphene.Field(
+        ClientConnection,
         search=graphene.String(),
         page=graphene.Int(),
         page_size=graphene.Int(),
@@ -48,9 +48,21 @@ class ClientQueries(graphene.ObjectType):
             else:
                 queryset = queryset.order_by(order_by)
 
+        total_count = queryset.count()
         start = (page - 1) * page_size
         end = start + page_size
-        return queryset[start:end]
+        items = queryset[start:end]
+        has_next = end < total_count
+        has_previous = start > 0
+
+        return ClientConnection(
+            results=items,
+            total_count=total_count,
+            page=page,
+            page_size=page_size,
+            has_next=has_next,
+            has_previous=has_previous,
+        )
 
     def resolve_client(root, info, id):
         user = info.context.user
