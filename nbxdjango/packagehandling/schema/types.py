@@ -41,8 +41,6 @@ class ClientType(DjangoObjectType):
         model = Client
         fields = (
             "id",
-            "first_name",
-            "last_name",
             "email",
             "identification_number",
             "state",
@@ -56,6 +54,11 @@ class ClientType(DjangoObjectType):
             "updated_at",
             "user",
         )
+
+    full_name = graphene.String()
+
+    def resolve_full_name(self, info):
+        return self.full_name
 
 
 class MeType(DjangoObjectType):
@@ -75,3 +78,12 @@ class MeType(DjangoObjectType):
         if hasattr(self, "client"):
             return self.client.last_name
         return None
+
+
+class ClientConnection(graphene.ObjectType):
+    results = graphene.List(ClientType)
+    total_count = graphene.Int()
+    page = graphene.Int()
+    page_size = graphene.Int()
+    has_next = graphene.Boolean()
+    has_previous = graphene.Boolean()

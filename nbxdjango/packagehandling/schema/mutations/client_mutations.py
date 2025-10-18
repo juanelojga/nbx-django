@@ -1,3 +1,5 @@
+import secrets
+
 import graphene
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
@@ -11,36 +13,23 @@ class CreateClient(graphene.Mutation):
         first_name = graphene.String(required=True)
         last_name = graphene.String(required=True)
         email = graphene.String(required=True)
-        password = graphene.String(required=True)
-        identification_number = graphene.String(required=True)
-        state = graphene.String(required=True)
-        city = graphene.String(required=True)
-        main_street = graphene.String(required=True)
-        secondary_street = graphene.String(required=True)
-        building_number = graphene.String(required=True)
+        identification_number = graphene.String()
+        state = graphene.String()
+        city = graphene.String()
+        main_street = graphene.String()
+        secondary_street = graphene.String()
+        building_number = graphene.String()
+        mobile_phone_number = graphene.String()
+        phone_number = graphene.String()
 
     client = graphene.Field(lambda: ClientType)
 
-    def mutate(
-        self,
-        info,
-        first_name,
-        last_name,
-        email,
-        password,
-        identification_number,
-        state,
-        city,
-        main_street,
-        secondary_street,
-        building_number,
-        mobile_phone_number,
-        phone_number,
-    ):
+    def mutate(self, info, first_name, last_name, email, **kwargs):
         if not info.context.user.is_superuser:
             raise PermissionDenied()
 
         User = get_user_model()
+        password = secrets.token_urlsafe(16)
         user = User.objects.create_user(username=email, email=email, password=password, is_active=False)
 
         client = Client(
@@ -48,14 +37,7 @@ class CreateClient(graphene.Mutation):
             first_name=first_name,
             last_name=last_name,
             email=email,
-            identification_number=identification_number,
-            state=state,
-            city=city,
-            main_street=main_street,
-            secondary_street=secondary_street,
-            building_number=building_number,
-            mobile_phone_number=mobile_phone_number,
-            phone_number=phone_number,
+            **kwargs,
         )
         client.save()
 
