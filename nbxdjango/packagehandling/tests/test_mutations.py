@@ -12,13 +12,13 @@ from graphql import GraphQLError
 from graphql_jwt.refresh_token.models import RefreshToken
 from packagehandling.factories import ClientFactory, UserFactory
 from packagehandling.models import Client
-from packagehandling.schema.mutations.auth_mutations import (
+from packagehandling.mutations.auth_mutations import (
     CustomRevokeToken,
     EmailAuth,
     ForgotPassword,
     ResetPassword,
 )
-from packagehandling.schema.mutations.client_mutations import (
+from packagehandling.mutations.client_mutations import (
     CreateClient,
     DeleteClient,
     UpdateClient,
@@ -203,7 +203,7 @@ class TestMutations:
         with pytest.raises(PermissionDenied):
             mutation.mutate(info, id=client.id)
 
-    @patch("packagehandling.schema.mutations.auth_mutations.send_email")
+    @patch("packagehandling.mutations.auth_mutations.send_email")
     def test_forgot_password_success(self, mock_send_email):
         user = UserFactory()
         info = Mock()
@@ -217,7 +217,7 @@ class TestMutations:
         assert kwargs["subject"] == "Reset Your Password"
         assert user.email in kwargs["recipient_list"]
 
-    @patch("packagehandling.schema.mutations.auth_mutations.send_email")
+    @patch("packagehandling.mutations.auth_mutations.send_email")
     def test_forgot_password_nonexistent_email(self, mock_send_email):
         info = Mock()
 

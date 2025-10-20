@@ -43,6 +43,7 @@ class PackageFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Package
 
+    client = factory.SubFactory(ClientFactory)
     barcode = factory.Faker("ean", length=13)
     courier = factory.Faker("company")
     other_courier = factory.LazyFunction(lambda: fake.company() if random.randint(0, 100) < 30 else None)

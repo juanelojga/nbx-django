@@ -1,7 +1,7 @@
 import graphene
 
-from ...models import Client, Consolidate
-from ..types import ConsolidateType
+from ..models import Client, Consolidate
+from ..schema.types import ConsolidateType
 
 
 class CreateConsolidate(graphene.Mutation):
