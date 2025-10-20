@@ -33,6 +33,7 @@ class PackageType(DjangoObjectType):
             "created_at",
             "updated_at",
             "client",
+            "comments",
         )
 
 
