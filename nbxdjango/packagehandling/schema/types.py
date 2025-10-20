@@ -104,3 +104,12 @@ class ConsolidateType(DjangoObjectType):
             "client",
             "packages",
         )
+
+
+class PackageConnection(graphene.ObjectType):
+    results = graphene.List(PackageType)
+    total_count = graphene.Int()
+    page = graphene.Int()
+    page_size = graphene.Int()
+    has_next = graphene.Boolean()
+    has_previous = graphene.Boolean()
