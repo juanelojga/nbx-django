@@ -1,13 +1,19 @@
 import graphene
 
-from .mutations.auth_mutations import (
+from ..mutations.auth_mutations import (
     CustomRevokeToken,
     EmailAuth,
     ForgotPassword,
     ResetPassword,
 )
-from .mutations.client_mutations import CreateClient, DeleteClient, UpdateClient
-from .mutations.token_mutations import TokenMutations
+from ..mutations.client_mutations import CreateClient, DeleteClient, UpdateClient
+from ..mutations.consolidate_mutations import (
+    CreateConsolidate,
+    DeleteConsolidate,
+    UpdateConsolidate,
+)
+from ..mutations.package_mutations import CreatePackage, DeletePackage, UpdatePackage
+from ..mutations.token_mutations import TokenMutations
 
 
 class AuthMutations(graphene.ObjectType):
@@ -23,5 +29,24 @@ class ClientMutations(graphene.ObjectType):
     delete_client = DeleteClient.Field()
 
 
-class Mutation(AuthMutations, ClientMutations, TokenMutations, graphene.ObjectType):
+class PackageMutations(graphene.ObjectType):
+    create_package = CreatePackage.Field()
+    update_package = UpdatePackage.Field()
+    delete_package = DeletePackage.Field()
+
+
+class ConsolidateMutations(graphene.ObjectType):
+    create_consolidate = CreateConsolidate.Field()
+    update_consolidate = UpdateConsolidate.Field()
+    delete_consolidate = DeleteConsolidate.Field()
+
+
+class Mutation(
+    AuthMutations,
+    ClientMutations,
+    TokenMutations,
+    ConsolidateMutations,
+    PackageMutations,
+    graphene.ObjectType,
+):
     pass

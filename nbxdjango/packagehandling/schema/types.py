@@ -2,7 +2,7 @@ import graphene
 from django.contrib.auth import get_user_model
 from graphene_django import DjangoObjectType
 
-from ..models import Client, Package
+from ..models import Client, Consolidate, Package
 
 
 class UserType(DjangoObjectType):
@@ -33,6 +33,7 @@ class PackageType(DjangoObjectType):
             "created_at",
             "updated_at",
             "client",
+            "comments",
         )
 
 
@@ -82,6 +83,32 @@ class MeType(DjangoObjectType):
 
 class ClientConnection(graphene.ObjectType):
     results = graphene.List(ClientType)
+    total_count = graphene.Int()
+    page = graphene.Int()
+    page_size = graphene.Int()
+    has_next = graphene.Boolean()
+    has_previous = graphene.Boolean()
+
+
+class ConsolidateType(DjangoObjectType):
+    class Meta:
+        model = Consolidate
+        fields = (
+            "id",
+            "description",
+            "status",
+            "delivery_date",
+            "comment",
+            "extra_attributes",
+            "created_at",
+            "updated_at",
+            "client",
+            "packages",
+        )
+
+
+class PackageConnection(graphene.ObjectType):
+    results = graphene.List(PackageType)
     total_count = graphene.Int()
     page = graphene.Int()
     page_size = graphene.Int()
