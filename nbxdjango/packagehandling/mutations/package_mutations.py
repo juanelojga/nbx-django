@@ -48,13 +48,21 @@ class UpdatePackage(graphene.Mutation):
 
     class Arguments:
         id = graphene.ID(required=True)
-        barcode = graphene.String()
         courier = graphene.String()
-        client_id = graphene.ID()
-        comments = graphene.String()
-        package_type = graphene.String()
+        other_courier = graphene.String()
+        length = graphene.Float()
+        width = graphene.Float()
+        height = graphene.Float()
+        dimension_unit = graphene.String()
         weight = graphene.Float()
-        tracking_number = graphene.String()
+        weight_unit = graphene.String()
+        description = graphene.String()
+        purchase_link = graphene.String()
+        real_price = graphene.Float()
+        service_price = graphene.Float()
+        arrival_date = graphene.Date()
+        comments = graphene.String()
+        client_id = graphene.ID()
 
     @login_required
     def mutate(self, info, id, **kwargs):
@@ -66,6 +74,9 @@ class UpdatePackage(graphene.Mutation):
             package = Package.objects.get(pk=id)
         except Package.DoesNotExist:
             raise ValidationError("Package not found.")
+
+        if "barcode" in kwargs:
+            raise ValidationError("Barcode cannot be modified.")
 
         if "client_id" in kwargs:
             if package.consolidates.exists():

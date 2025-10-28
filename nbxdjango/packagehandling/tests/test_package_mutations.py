@@ -139,11 +139,44 @@ class TestPackageMutations:
         info = info_with_user_factory(superuser)
 
         mutation = UpdatePackage()
-        result = mutation.mutate.__wrapped__(mutation, info, id=package.id, comments="Updated comments")
+        result = mutation.mutate.__wrapped__(
+            mutation,
+            info,
+            id=package.id,
+            courier="FedEx",
+            weight=2.5,
+            comments="Updated comments",
+        )
 
+        assert result.package.courier == "FedEx"
+        assert result.package.weight == 2.5
         assert result.package.comments == "Updated comments"
         package.refresh_from_db()
+        assert package.courier == "FedEx"
+        assert package.weight == 2.5
         assert package.comments == "Updated comments"
+
+    def test_update_package_prohibits_barcode_modification(self, info_with_user_factory):
+        superuser = UserFactory(is_superuser=True)
+        package = PackageFactory()
+        info = info_with_user_factory(superuser)
+
+        mutation = UpdatePackage()
+        with pytest.raises(ValidationError) as excinfo:
+            mutation.mutate.__wrapped__(mutation, info, id=package.id, barcode="new_barcode")
+        assert "Barcode cannot be modified" in str(excinfo.value)
+
+    def test_update_package_partial_update(self, info_with_user_factory):
+        superuser = UserFactory(is_superuser=True)
+        package = PackageFactory(courier="DHL")
+        info = info_with_user_factory(superuser)
+
+        mutation = UpdatePackage()
+        result = mutation.mutate.__wrapped__(mutation, info, id=package.id, courier="UPS")
+
+        assert result.package.courier == "UPS"
+        package.refresh_from_db()
+        assert package.courier == "UPS"
 
     def test_update_package_blocked_if_consolidated(self, info_with_user_factory):
         superuser = UserFactory(is_superuser=True)
