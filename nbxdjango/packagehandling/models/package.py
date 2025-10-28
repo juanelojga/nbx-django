@@ -4,7 +4,7 @@ from .client import Client
 
 
 class Package(models.Model):
-    barcode = models.CharField(max_length=255)
+    barcode = models.CharField(max_length=255, unique=True)
     courier = models.CharField(max_length=255)
     other_courier = models.CharField(max_length=255, null=True, blank=True)
     length = models.FloatField(null=True, blank=True)
