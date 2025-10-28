@@ -12,11 +12,20 @@ class CreatePackage(graphene.Mutation):
     class Arguments:
         barcode = graphene.String(required=True)
         courier = graphene.String(required=True)
-        client_id = graphene.ID(required=True)
-        comments = graphene.String()
-        package_type = graphene.String()
+        other_courier = graphene.String()
+        length = graphene.Float()
+        width = graphene.Float()
+        height = graphene.Float()
+        dimension_unit = graphene.String()
         weight = graphene.Float()
-        tracking_number = graphene.String()
+        weight_unit = graphene.String()
+        description = graphene.String()
+        purchase_link = graphene.String()
+        real_price = graphene.Float()
+        service_price = graphene.Float()
+        arrival_date = graphene.Date()
+        comments = graphene.String()
+        client_id = graphene.ID(required=True)
 
     @login_required
     def mutate(self, info, **kwargs):

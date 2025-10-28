@@ -114,12 +114,12 @@ class TestQueries:
 
     def test_resolve_all_clients_search_case_insensitive(self):
         superuser = UserFactory(is_superuser=True)
-        ClientFactory(first_name="John")
-        ClientFactory(first_name="jane")
+        ClientFactory(first_name="John", last_name="Doe")
+        ClientFactory(first_name="jane", last_name="Doe")
         info = Mock()
         info.context.user = superuser
-        result = Query.resolve_all_clients(None, info, search="JOHN")
-        assert len(result.results) == 1
+        result = Query.resolve_all_clients(None, info, search="j")
+        assert len(result.results) == 2
 
     def test_resolve_all_clients_search_with_pagination(self):
         superuser = UserFactory(is_superuser=True)
