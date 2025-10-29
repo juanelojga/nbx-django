@@ -12,7 +12,7 @@ from graphql import GraphQLError
 from graphql_jwt import utils
 from graphql_jwt.refresh_token.models import RefreshToken
 
-from ..utils import send_email
+from ...utils import send_email
 
 
 class EmailAuth(graphene.Mutation):
@@ -31,9 +31,16 @@ class EmailAuth(graphene.Mutation):
 
         token = graphql_jwt.shortcuts.get_token(user)
         refresh_delta = getattr(django_settings, "JWT_REFRESH_EXPIRATION_DELTA", timedelta(days=7))
+
+        # Ensure `payload` explicitly includes the email and optional username
+        payload = utils.jwt_payload(user)
+        payload["email"] = user.email  # Include email explicitly
+        if user.username:
+            payload["username"] = user.username  # Includes username only if set
+
         return EmailAuth(
             token=token,
-            payload=utils.jwt_payload(user),
+            payload=payload,
             refreshExpiresIn=int(refresh_delta.total_seconds()),
         )
 

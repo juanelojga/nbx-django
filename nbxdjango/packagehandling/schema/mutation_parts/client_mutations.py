@@ -4,8 +4,8 @@ import graphene
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 
-from ..models import Client
-from ..schema.types import ClientType
+from ...models import Client
+from ..types import ClientType
 
 
 class CreateClient(graphene.Mutation):
