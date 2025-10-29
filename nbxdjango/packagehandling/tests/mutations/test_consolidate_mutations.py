@@ -15,7 +15,51 @@ from packagehandling.factories import (
 from packagehandling.models import Consolidate
 from packagehandling.schema.mutation_parts.consolidate_mutations import (
     CreateConsolidate,
+    DeleteConsolidate,
 )
+
+
+@pytest.mark.django_db
+class TestDeleteConsolidate:
+    def test_delete_consolidate_success(self, info_with_user_factory):
+        """
+        Test successfully deleting a consolidate as a superuser.
+        """
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory()
+        consolidate = ConsolidateFactory(client=client)
+        info = info_with_user_factory(superuser)
+
+        mutation = DeleteConsolidate()
+        result = mutation.mutate(info, id=consolidate.id)
+
+        assert result.success is True
+        assert not Consolidate.objects.filter(id=consolidate.id).exists()
+
+    def test_delete_consolidate_not_found(self, info_with_user_factory):
+        """
+        Test attempting to delete a consolidate with a nonexistent ID.
+        """
+        superuser = UserFactory(is_superuser=True)
+        info = info_with_user_factory(superuser)
+
+        mutation = DeleteConsolidate()
+        result = mutation.mutate(info, id=9999)  # Nonexistent ID
+
+        assert result.success is False
+
+    def test_delete_consolidate_as_regular_user_raises_permission_denied(self, info_with_user_factory):
+        """
+        Test that a regular user cannot delete a consolidate.
+        """
+        regular_user = UserFactory(is_superuser=False)
+        client = ClientFactory()
+        consolidate = ConsolidateFactory(client=client)
+        info = info_with_user_factory(regular_user)
+
+        mutation = DeleteConsolidate()
+        with pytest.raises(PermissionDenied):
+            mutation.mutate(info, id=consolidate.id)
 
 
 @pytest.fixture

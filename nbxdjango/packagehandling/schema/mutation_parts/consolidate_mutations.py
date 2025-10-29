@@ -113,6 +113,11 @@ class DeleteConsolidate(graphene.Mutation):
     success = graphene.Boolean()
 
     def mutate(self, info, id):
+
+        user = info.context.user
+        if not user.is_superuser:
+            raise PermissionDenied("You do not have permission to perform this action.")
+
         try:
             Consolidate.objects.get(pk=id).delete()
             success = True
