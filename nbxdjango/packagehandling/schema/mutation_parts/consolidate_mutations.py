@@ -3,6 +3,7 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
 from django_q.tasks import async_task
 
+from ...emails.messages import CONSOLIDATE_CREATED_MESSAGE, CONSOLIDATE_CREATED_SUBJECT
 from ...models import Consolidate, Package
 from ..types import ConsolidateType
 
@@ -72,8 +73,8 @@ class CreateConsolidate(graphene.Mutation):
         consolidate.packages.set(packages)
 
         if send_email:
-            subject = "Consolidate Created"
-            message = "Your consolidate has been successfully created."
+            subject = CONSOLIDATE_CREATED_SUBJECT
+            message = CONSOLIDATE_CREATED_MESSAGE
             from_email = settings.DEFAULT_FROM_EMAIL
             recipient_list = [client.email]
             async_task("django.core.mail.send_mail", subject, message, from_email, recipient_list)
