@@ -1,6 +1,7 @@
 import graphene
+from django.core.exceptions import PermissionDenied, ValidationError
 
-from ...models import Client, Consolidate
+from ...models import Consolidate, Package
 from ..types import ConsolidateType
 
 
@@ -8,11 +9,9 @@ class CreateConsolidate(graphene.Mutation):
     class Arguments:
         description = graphene.String(required=True)
         status = graphene.String(required=True)
-        delivery_date = graphene.Date(required=True)
-        comment = graphene.String()
-        client_id = graphene.ID(required=True)
+        delivery_date = graphene.Date(required=False)
+        comment = graphene.String(required=False)
         package_ids = graphene.List(graphene.ID, required=True)
-        extra_attributes = graphene.JSONString()
 
     consolidate = graphene.Field(ConsolidateType)
 
@@ -21,23 +20,39 @@ class CreateConsolidate(graphene.Mutation):
         info,
         description,
         status,
-        delivery_date,
-        client_id,
         package_ids,
+        delivery_date=None,
         comment=None,
-        extra_attributes=None,
     ):
-        client = Client.objects.get(pk=client_id)
+        if not info.context.user.is_superuser:
+            raise PermissionDenied("You do not have permission to perform this action.")
+
+        if not package_ids:
+            raise ValidationError("At least one package ID is required.")
+
+        packages = Package.objects.filter(id__in=package_ids)
+
+        if len(packages) != len(package_ids):
+            raise ValidationError("One or more packages do not exist.")
+
+        client = None
+        for package in packages:
+            if client is None:
+                client = package.client
+            elif package.client != client:
+                raise ValidationError("All packages must belong to the same client.")
+            if package.consolidate is not None:
+                raise ValidationError("Package already belongs to a consolidate.")
+
         consolidate = Consolidate(
             description=description,
             status=status,
             delivery_date=delivery_date,
             comment=comment,
             client=client,
-            extra_attributes=extra_attributes or {},
         )
         consolidate.save()
-        consolidate.packages.set(package_ids)
+        consolidate.packages.set(packages)
         return CreateConsolidate(consolidate=consolidate)
 
 
