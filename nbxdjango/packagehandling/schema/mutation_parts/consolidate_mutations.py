@@ -96,12 +96,43 @@ class UpdateConsolidate(graphene.Mutation):
     consolidate = graphene.Field(ConsolidateType)
 
     def mutate(self, info, id, **kwargs):
-        consolidate = Consolidate.objects.get(pk=id)
+        user = info.context.user
+        if not user.is_superuser:
+            raise PermissionDenied("You do not have permission to perform this action.")
+
+        try:
+            consolidate = Consolidate.objects.get(pk=id)
+        except Consolidate.DoesNotExist:
+            raise ValidationError("Consolidate not found.")
+
+        # Client immutability
+        kwargs.pop("client", None)
+
+        # Ignore extra_attributes
+        kwargs.pop("extra_attributes", None)
+
+        # Package validation
+        if "package_ids" in kwargs:
+            new_package_ids = kwargs.pop("package_ids")
+            if not new_package_ids:
+                raise ValidationError("At least one package ID is required.")
+
+            new_packages = Package.objects.filter(id__in=new_package_ids)
+
+            if len(new_packages) != len(new_package_ids):
+                raise ValidationError("One or more packages do not exist.")
+
+            client_id = consolidate.client.id
+            for package in new_packages:
+                if package.client.id != client_id:
+                    raise ValidationError("All packages must belong to the same client as the consolidate.")
+                if package.consolidate is not None and package.consolidate != consolidate:
+                    raise ValidationError(f"Package {package.id} already belongs to another consolidate.")
+            consolidate.packages.set(new_packages)
+
         for key, value in kwargs.items():
-            if key == "package_ids":
-                consolidate.packages.set(value)
-            else:
-                setattr(consolidate, key, value)
+            setattr(consolidate, key, value)
+
         consolidate.save()
         return UpdateConsolidate(consolidate=consolidate)
 

@@ -16,6 +16,7 @@ from packagehandling.models import Consolidate
 from packagehandling.schema.mutation_parts.consolidate_mutations import (
     CreateConsolidate,
     DeleteConsolidate,
+    UpdateConsolidate,
 )
 
 
@@ -363,3 +364,141 @@ class TestCreateConsolidate:
             CONSOLIDATE_CREATED_MESSAGE,
             ["test.client@example.com"],
         )
+
+
+@pytest.mark.django_db
+class TestUpdateConsolidate:
+    def test_update_consolidate_success(self, info_with_user_factory):
+        """
+        Test successfully updating a consolidate as a superuser with valid data.
+        """
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory()
+        consolidate = ConsolidateFactory(client=client, description="Old description", status="pending")
+        package1 = PackageFactory(client=client, consolidate=None)
+        package2 = PackageFactory(client=client, consolidate=None)
+        info = info_with_user_factory(superuser)
+
+        mutation = UpdateConsolidate()
+        result = mutation.mutate(
+            info,
+            id=consolidate.id,
+            description="Updated description",
+            status="processing",
+            delivery_date="2025-11-01",
+            comment="Updated comment",
+            package_ids=[package1.id, package2.id],
+        )
+
+        # Assert that the consolidate was updated correctly
+        assert result.consolidate.description == "Updated description"
+        assert result.consolidate.status == "processing"
+        assert str(result.consolidate.delivery_date) == "2025-11-01"
+        assert result.consolidate.comment == "Updated comment"
+
+        # Verify the packages are now associated with the consolidate
+        assert set(result.consolidate.packages.all()) == {package1, package2}
+
+    def test_update_consolidate_missing_package_ids(self, info_with_user_factory):
+        """
+        Test that update consolidate raises a ValidationError if an empty package ID list is given.
+        """
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory()
+        consolidate = ConsolidateFactory(client=client, description="Old description", status="pending")
+        info = info_with_user_factory(superuser)
+
+        mutation = UpdateConsolidate()
+        with pytest.raises(ValidationError, match="At least one package ID is required."):
+            mutation.mutate(
+                info,
+                id=consolidate.id,
+                package_ids=[],
+            )
+
+    def test_update_consolidate_nonexistent_package_ids(self, info_with_user_factory):
+        """
+        Test that update consolidate raises a ValidationError if one or more package IDs do not exist.
+        """
+        superuser = UserFactory(is_superuser=True)
+        consolidate = ConsolidateFactory()
+        info = info_with_user_factory(superuser)
+
+        mutation = UpdateConsolidate()
+        with pytest.raises(ValidationError, match="One or more packages do not exist."):
+            mutation.mutate(
+                info,
+                id=consolidate.id,
+                package_ids=[9999, 10000],  # Nonexistent IDs
+            )
+
+    def test_update_consolidate_with_different_clients(self, info_with_user_factory):
+        """
+        Test that update consolidate raises a ValidationError if packages belong to different clients.
+        """
+        superuser = UserFactory(is_superuser=True)
+        consolidate = ConsolidateFactory()
+        client1 = consolidate.client
+        client2 = ClientFactory()
+        package1 = PackageFactory(client=client1, consolidate=None)
+        package2 = PackageFactory(client=client2, consolidate=None)
+        info = info_with_user_factory(superuser)
+
+        mutation = UpdateConsolidate()
+        with pytest.raises(ValidationError, match="All packages must belong to the same client as the consolidate."):
+            mutation.mutate(
+                info,
+                id=consolidate.id,
+                package_ids=[package1.id, package2.id],
+            )
+
+    def test_update_consolidate_with_already_consolidated_packages(self, info_with_user_factory):
+        """
+        Test that update consolidate raises a ValidationError if one or more packages
+        are already part of another consolidate.
+        """
+        superuser = UserFactory(is_superuser=True)
+        existing_consolidate = ConsolidateFactory()
+        consolidate = ConsolidateFactory(client=existing_consolidate.client)
+        package1 = PackageFactory(client=consolidate.client, consolidate=existing_consolidate)
+        package2 = PackageFactory(client=consolidate.client, consolidate=None)
+        info = info_with_user_factory(superuser)
+
+        mutation = UpdateConsolidate()
+        with pytest.raises(ValidationError, match="Package .* already belongs to another consolidate."):
+            mutation.mutate(
+                info,
+                id=consolidate.id,
+                package_ids=[package1.id, package2.id],
+            )
+
+    def test_update_consolidate_as_regular_user_raises_permission_denied(self, info_with_user_factory):
+        """
+        Test that a regular user cannot update a consolidate.
+        """
+        regular_user = UserFactory(is_superuser=False)
+        consolidate = ConsolidateFactory()
+        info = info_with_user_factory(regular_user)
+
+        mutation = UpdateConsolidate()
+        with pytest.raises(PermissionDenied):
+            mutation.mutate(
+                info,
+                id=consolidate.id,
+                description="Updated description",
+            )
+
+    def test_update_consolidate_nonexistent_id(self, info_with_user_factory):
+        """
+        Test that update consolidate raises a ValidationError if the consolidate ID does not exist.
+        """
+        superuser = UserFactory(is_superuser=True)
+        info = info_with_user_factory(superuser)
+
+        mutation = UpdateConsolidate()
+        with pytest.raises(ValidationError, match="Consolidate not found."):
+            mutation.mutate(
+                info,
+                id=9999,  # Nonexistent consolidate ID
+                description="Updated description",
+            )
