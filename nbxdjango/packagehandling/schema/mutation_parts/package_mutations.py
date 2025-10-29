@@ -2,8 +2,8 @@ import graphene
 from django.core.exceptions import PermissionDenied, ValidationError
 from graphql_jwt.decorators import login_required
 
-from ..models import Client, Package
-from ..schema.types import PackageType
+from ...models import Client, Package
+from ..types import PackageType
 
 
 class CreatePackage(graphene.Mutation):

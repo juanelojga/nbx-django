@@ -9,7 +9,7 @@ from packagehandling.factories import (
     UserFactory,
 )
 from packagehandling.models import Package
-from packagehandling.mutations.package_mutations import (
+from packagehandling.schema.mutations.package_mutations import (
     CreatePackage,
     DeletePackage,
     UpdatePackage,

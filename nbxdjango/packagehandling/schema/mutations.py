@@ -1,19 +1,23 @@
 import graphene
 
-from ..mutations.auth_mutations import (
+from .mutation_parts.auth_mutations import (
     CustomRevokeToken,
     EmailAuth,
     ForgotPassword,
     ResetPassword,
 )
-from ..mutations.client_mutations import CreateClient, DeleteClient, UpdateClient
-from ..mutations.consolidate_mutations import (
+from .mutation_parts.client_mutations import CreateClient, DeleteClient, UpdateClient
+from .mutation_parts.consolidate_mutations import (
     CreateConsolidate,
     DeleteConsolidate,
     UpdateConsolidate,
 )
-from ..mutations.package_mutations import CreatePackage, DeletePackage, UpdatePackage
-from ..mutations.token_mutations import TokenMutations
+from .mutation_parts.package_mutations import (
+    CreatePackage,
+    DeletePackage,
+    UpdatePackage,
+)
+from .mutation_parts.token_mutations import TokenMutations
 
 
 class AuthMutations(graphene.ObjectType):

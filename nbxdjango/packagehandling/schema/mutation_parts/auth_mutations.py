@@ -12,7 +12,7 @@ from graphql import GraphQLError
 from graphql_jwt import utils
 from graphql_jwt.refresh_token.models import RefreshToken
 
-from ..utils import send_email
+from ...utils import send_email
 
 
 class EmailAuth(graphene.Mutation):
