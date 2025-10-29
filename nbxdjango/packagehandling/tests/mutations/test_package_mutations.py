@@ -216,6 +216,29 @@ class TestPackageMutations:
         with pytest.raises(PermissionDenied):
             mutation.mutate.__wrapped__(mutation, info, id=package.id)
 
+    def test_delete_package_blocked_if_consolidated(self, info_with_user_factory):
+        """
+        Test that attempting to delete a package raises a ValidationError
+        if the package is part of a consolidate.
+        """
+        superuser = UserFactory(is_superuser=True)
+        # Create a package and associate it with a Consolidate
+        package = PackageFactory()
+        consolidate = ConsolidateFactory(client=package.client)
+
+        # Associate the package with the consolidate object
+        package.consolidate = consolidate
+        package.save()
+
+        info = info_with_user_factory(superuser)
+        mutation = DeletePackage()
+
+        with pytest.raises(ValidationError, match="Package cannot be deleted because it belongs to a consolidate."):
+            mutation.mutate.__wrapped__(mutation, info, id=package.id)
+
+        # Ensure the package was not deleted
+        assert Package.objects.filter(id=package.id).exists()
+
     def test_update_package_as_regular_user_permission_denied(self, info_with_user_factory):
         user = UserFactory()
         package = PackageFactory()

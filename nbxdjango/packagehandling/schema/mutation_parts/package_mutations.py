@@ -113,5 +113,9 @@ class DeletePackage(graphene.Mutation):
         except Package.DoesNotExist:
             raise ValidationError("Package not found.")
 
+        # Prevent deletion if package is part of a consolidate
+        if package.consolidate is not None:
+            raise ValidationError("Package cannot be deleted because it belongs to a consolidate.")
+
         package.delete()
         return DeletePackage(success=True)
