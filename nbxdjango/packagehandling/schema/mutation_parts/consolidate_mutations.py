@@ -105,6 +105,47 @@ class UpdateConsolidate(graphene.Mutation):
         except Consolidate.DoesNotExist:
             raise ValidationError("Consolidate not found.")
 
+        # Status validation
+        if "status" in kwargs:
+            new_status = kwargs.pop("status")
+            if new_status not in [s.value for s in Consolidate.Status]:
+                raise ValidationError(f"Invalid status: '{new_status}' is not a valid Consolidate status.")
+
+            current_status = consolidate.status
+
+            # Define valid transitions
+            valid_transitions = {
+                Consolidate.Status.AWAITING_PAYMENT.value: [
+                    Consolidate.Status.PENDING.value,
+                    Consolidate.Status.CANCELLED.value,
+                ],
+                Consolidate.Status.PENDING.value: [
+                    Consolidate.Status.PROCESSING.value,
+                    Consolidate.Status.CANCELLED.value,
+                ],
+                Consolidate.Status.PROCESSING.value: [
+                    Consolidate.Status.IN_TRANSIT.value,
+                    Consolidate.Status.CANCELLED.value,
+                ],
+                Consolidate.Status.IN_TRANSIT.value: [
+                    Consolidate.Status.DELIVERED.value,
+                    Consolidate.Status.CANCELLED.value,
+                ],
+                Consolidate.Status.DELIVERED.value: [],  # No transitions from delivered
+                Consolidate.Status.CANCELLED.value: [],  # No transitions from cancelled
+            }
+
+            if (
+                new_status == Consolidate.Status.CANCELLED.value
+                and current_status != Consolidate.Status.DELIVERED.value
+            ):
+                # Cancelled is allowed from any state before delivered
+                pass
+            elif new_status not in valid_transitions.get(current_status, []):
+                raise ValidationError(f"Invalid status transition from '{current_status}' to '{new_status}'.")
+
+            consolidate.status = new_status
+
         # Client immutability
         kwargs.pop("client", None)
 
