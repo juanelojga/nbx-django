@@ -1,5 +1,11 @@
+from unittest.mock import patch
+
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
+from packagehandling.emails.messages import (
+    CONSOLIDATE_CREATED_MESSAGE,
+    CONSOLIDATE_CREATED_SUBJECT,
+)
 from packagehandling.factories import (
     ClientFactory,
     ConsolidateFactory,
@@ -244,3 +250,72 @@ class TestCreateConsolidate:
             assert result.consolidate.status == valid_status.value
             assert result.consolidate.description == f"Test consolidate with status {valid_status}"
             assert Consolidate.objects.filter(id=result.consolidate.id).exists()
+
+    @patch("packagehandling.schema.mutation_parts.consolidate_mutations.send_consolidate_email")  # Correct target
+    def test_create_consolidate_with_email_sending(self, mock_send_email, info_with_user_factory):
+        """
+        Test creating a Consolidate with send_email=True. Verifies that the email is sent correctly.
+        """
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory(email="test.client@example.com")
+        package1 = PackageFactory(client=client, consolidate=None)
+        package2 = PackageFactory(client=client, consolidate=None)
+        info = info_with_user_factory(superuser)
+
+        mutation = CreateConsolidate()
+        result = mutation.mutate(
+            info,
+            description="Test consolidate with email",
+            status="pending",
+            delivery_date="2025-10-30",
+            comment="Include email notification",
+            package_ids=[package1.id, package2.id],
+            send_email=True,  # Set to True
+        )
+
+        # Assert that the consolidate was created successfully
+        assert result.consolidate.description == "Test consolidate with email"
+        assert result.consolidate.client == client
+
+        # Verify that the email function was called
+        mock_send_email.assert_called_once_with(
+            CONSOLIDATE_CREATED_SUBJECT,
+            CONSOLIDATE_CREATED_MESSAGE,
+            ["test.client@example.com"],
+        )
+
+    @patch("packagehandling.schema.mutation_parts.consolidate_mutations.send_consolidate_email")  # Correct target
+    def test_create_consolidate_with_email_sending_fail_silently(self, mock_send_email, info_with_user_factory):
+        """
+        Test the handling of email-sending logic when `send_email=True` fails.
+        """
+        mock_send_email.side_effect = Exception("Email sending error.")  # Simulate failure
+
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory(email="test.client@example.com")
+        package1 = PackageFactory(client=client, consolidate=None)
+        package2 = PackageFactory(client=client, consolidate=None)
+        info = info_with_user_factory(superuser)
+
+        mutation = CreateConsolidate()
+
+        result = mutation.mutate(
+            info,
+            description="Test consolidate with failing email",
+            status="pending",
+            delivery_date="2025-10-30",
+            comment="Email task fails silently",
+            package_ids=[package1.id, package2.id],
+            send_email=True,  # Set to True
+        )
+
+        # Assert that the consolidate was created despite email failure
+        assert result.consolidate.description == "Test consolidate with failing email"
+        assert result.consolidate.client == client
+
+        # Verify that the mocked email function was called despite its failure
+        mock_send_email.assert_called_once_with(
+            CONSOLIDATE_CREATED_SUBJECT,
+            CONSOLIDATE_CREATED_MESSAGE,
+            ["test.client@example.com"],
+        )

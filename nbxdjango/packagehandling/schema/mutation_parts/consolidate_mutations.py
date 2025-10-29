@@ -1,7 +1,6 @@
 import graphene
-from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
-from django_q.tasks import async_task
+from packagehandling.utils import send_email as send_consolidate_email
 
 from ...emails.messages import CONSOLIDATE_CREATED_MESSAGE, CONSOLIDATE_CREATED_SUBJECT
 from ...models import Consolidate, Package
@@ -25,7 +24,7 @@ class CreateConsolidate(graphene.Mutation):
         description,
         status,
         package_ids,
-        send_email,
+        send_email=False,
         delivery_date=None,
         comment=None,
     ):
@@ -75,9 +74,11 @@ class CreateConsolidate(graphene.Mutation):
         if send_email:
             subject = CONSOLIDATE_CREATED_SUBJECT
             message = CONSOLIDATE_CREATED_MESSAGE
-            from_email = settings.DEFAULT_FROM_EMAIL
             recipient_list = [client.email]
-            async_task("django.core.mail.send_mail", subject, message, from_email, recipient_list)
+            try:
+                send_consolidate_email(subject, message, recipient_list)
+            except Exception as e:
+                print(f"Failed to send email for consolidate creation: {e}")
 
         return CreateConsolidate(consolidate=consolidate)
 
