@@ -1,7 +1,6 @@
 from django.db import models
 
 from .client import Client
-from .package import Package
 
 
 class Consolidate(models.Model):
@@ -10,7 +9,6 @@ class Consolidate(models.Model):
     delivery_date = models.DateField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="consolidates")
-    packages = models.ManyToManyField(Package, related_name="consolidates")
     extra_attributes = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

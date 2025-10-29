@@ -180,9 +180,14 @@ class TestPackageMutations:
 
     def test_update_package_blocked_if_consolidated(self, info_with_user_factory):
         superuser = UserFactory(is_superuser=True)
+        # Create a package and associate it with a Consolidate
         package = PackageFactory()
         consolidate = ConsolidateFactory(client=package.client)
-        consolidate.packages.add(package)
+
+        # Associate the package with the consolidate object
+        package.consolidate = consolidate
+        package.save()
+
         new_client = ClientFactory()
         info = info_with_user_factory(superuser)
 

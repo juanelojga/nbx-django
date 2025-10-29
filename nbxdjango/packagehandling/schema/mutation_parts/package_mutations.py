@@ -79,7 +79,8 @@ class UpdatePackage(graphene.Mutation):
             raise ValidationError("Barcode cannot be modified.")
 
         if "client_id" in kwargs:
-            if package.consolidates.exists():
+            # Directly check if the consolidate field is not None
+            if package.consolidate:
                 raise ValidationError("Client cannot be updated for packages already consolidated.")
             try:
                 client = Client.objects.get(pk=kwargs["client_id"])

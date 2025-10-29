@@ -1,6 +1,8 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from .client import Client
+from .consolidate import Consolidate
 
 
 class Package(models.Model):
@@ -20,8 +22,15 @@ class Package(models.Model):
     arrival_date = models.DateField(null=True, blank=True)
     comments = models.TextField(null=True, blank=True)
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="packages")
+    consolidate = models.ForeignKey(
+        Consolidate, on_delete=models.SET_NULL, null=True, blank=True, related_name="packages"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Package {self.barcode}"
+
+    def clean(self):
+        if self.consolidate and self.client != self.consolidate.client:
+            raise ValidationError("Package and Consolidate must belong to the same client.")
