@@ -44,6 +44,19 @@ class CreateConsolidate(graphene.Mutation):
             if package.consolidate is not None:
                 raise ValidationError("Package already belongs to a consolidate.")
 
+        # Validate status
+        allowed_initial_statuses = [
+            Consolidate.Status.AWAITING_PAYMENT.value,
+            Consolidate.Status.PENDING.value,
+            Consolidate.Status.PROCESSING.value,
+        ]
+
+        if status not in [s.value for s in Consolidate.Status]:
+            raise ValidationError(f"Invalid status: '{status}' is not a valid Consolidate status.")
+
+        if status not in allowed_initial_statuses:
+            raise ValidationError(f"Invalid initial status: a new consolidate cannot start as '{status}'.")
+
         consolidate = Consolidate(
             description=description,
             status=status,

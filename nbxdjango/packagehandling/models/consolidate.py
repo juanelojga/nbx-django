@@ -4,8 +4,20 @@ from .client import Client
 
 
 class Consolidate(models.Model):
+    class Status(models.TextChoices):
+        AWAITING_PAYMENT = "awaiting_payment", "Awaiting Payment"
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        IN_TRANSIT = "in_transit", "In Transit"
+        DELIVERED = "delivered", "Delivered"
+        CANCELLED = "cancelled", "Cancelled"
+
     description = models.TextField()
-    status = models.CharField(max_length=255)
+    status = models.CharField(
+        max_length=50,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
     delivery_date = models.DateField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="consolidates")

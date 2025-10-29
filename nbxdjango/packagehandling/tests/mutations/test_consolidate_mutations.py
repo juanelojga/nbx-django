@@ -169,3 +169,78 @@ class TestCreateConsolidate:
                 delivery_date="2025-10-30",
                 package_ids=[package1.id],
             )
+
+    def test_create_consolidate_invalid_status(self, info_with_user_factory):
+        """
+        Test that create consolidate raises a ValidationError if an invalid status is provided.
+        """
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory()
+        package1 = PackageFactory(client=client, consolidate=None)
+        info = info_with_user_factory(superuser)
+
+        mutation = CreateConsolidate()
+        with pytest.raises(
+            ValidationError, match="Invalid status: 'invalid_status' is not a valid Consolidate status."
+        ):
+            mutation.mutate(
+                info,
+                description="Invalid status test",
+                status="invalid_status",  # Invalid status
+                delivery_date="2025-10-30",
+                package_ids=[package1.id],
+            )
+
+    def test_create_consolidate_invalid_initial_status(self, info_with_user_factory):
+        """
+        Test that create consolidate raises a ValidationError if an invalid initial status is provided.
+        """
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory()
+        package1 = PackageFactory(client=client, consolidate=None)
+        info = info_with_user_factory(superuser)
+
+        mutation = CreateConsolidate()
+        with pytest.raises(
+            ValidationError,
+            match="Invalid initial status: a new consolidate cannot start as 'delivered'.",
+        ):
+            mutation.mutate(
+                info,
+                description="Invalid initial status test",
+                status="delivered",  # Invalid initial status
+                delivery_date="2025-10-30",
+                package_ids=[package1.id],
+            )
+
+    def test_create_consolidate_valid_statuses(self, info_with_user_factory):
+        """
+        Test that create consolidate succeeds with valid initial statuses.
+        """
+        superuser = UserFactory(is_superuser=True)
+        client = ClientFactory()
+        info = info_with_user_factory(superuser)
+
+        mutation = CreateConsolidate()
+
+        for valid_status in [
+            Consolidate.Status.AWAITING_PAYMENT,
+            Consolidate.Status.PENDING,
+            Consolidate.Status.PROCESSING,
+        ]:
+            # Create new packages for each iteration to avoid conflicts
+            package1 = PackageFactory(client=client, consolidate=None)
+            package2 = PackageFactory(client=client, consolidate=None)
+
+            result = mutation.mutate(
+                info,
+                description=f"Test consolidate with status {valid_status}",
+                status=valid_status.value,
+                delivery_date="2025-10-30",
+                comment=None,
+                package_ids=[package1.id, package2.id],
+            )
+
+            assert result.consolidate.status == valid_status.value
+            assert result.consolidate.description == f"Test consolidate with status {valid_status}"
+            assert Consolidate.objects.filter(id=result.consolidate.id).exists()
