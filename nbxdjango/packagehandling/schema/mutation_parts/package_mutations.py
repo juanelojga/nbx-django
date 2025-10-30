@@ -79,7 +79,8 @@ class UpdatePackage(graphene.Mutation):
             raise ValidationError("Barcode cannot be modified.")
 
         if "client_id" in kwargs:
-            if package.consolidates.exists():
+            # Directly check if the consolidate field is not None
+            if package.consolidate:
                 raise ValidationError("Client cannot be updated for packages already consolidated.")
             try:
                 client = Client.objects.get(pk=kwargs["client_id"])
@@ -111,6 +112,10 @@ class DeletePackage(graphene.Mutation):
             package = Package.objects.get(pk=id)
         except Package.DoesNotExist:
             raise ValidationError("Package not found.")
+
+        # Prevent deletion if package is part of a consolidate
+        if package.consolidate is not None:
+            raise ValidationError("Package cannot be deleted because it belongs to a consolidate.")
 
         package.delete()
         return DeletePackage(success=True)

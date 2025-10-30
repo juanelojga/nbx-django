@@ -14,10 +14,13 @@ class PackageQueries(graphene.ObjectType):
         page_size=graphene.Int(),
         order_by=graphene.String(),
         client_id=graphene.Int(),
+        not_in_consolidate=graphene.Boolean(default_value=True),
     )
     package = graphene.Field(PackageType, id=graphene.Int())
 
-    def resolve_all_packages(root, info, search=None, page=1, page_size=10, order_by=None, client_id=None):
+    def resolve_all_packages(
+        root, info, search=None, page=1, page_size=10, order_by=None, client_id=None, not_in_consolidate=True
+    ):
         if page_size not in [10, 20, 50, 100]:
             raise ValueError("Invalid page_size. Valid values are 10, 20, 50, 100.")
 
@@ -35,6 +38,9 @@ class PackageQueries(graphene.ObjectType):
 
         if search:
             queryset = queryset.filter(Q(barcode__icontains=search) | Q(description__icontains=search))
+
+        if not_in_consolidate:
+            queryset = queryset.filter(consolidate__isnull=True)
 
         if order_by:
             order_by_field = order_by.replace("-", "")

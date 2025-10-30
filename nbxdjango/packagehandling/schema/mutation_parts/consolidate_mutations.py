@@ -1,6 +1,9 @@
 import graphene
+from django.core.exceptions import PermissionDenied, ValidationError
+from packagehandling.utils import send_email as send_consolidate_email
 
-from ...models import Client, Consolidate
+from ...emails.messages import CONSOLIDATE_CREATED_MESSAGE, CONSOLIDATE_CREATED_SUBJECT
+from ...models import Consolidate, Package
 from ..types import ConsolidateType
 
 
@@ -8,11 +11,10 @@ class CreateConsolidate(graphene.Mutation):
     class Arguments:
         description = graphene.String(required=True)
         status = graphene.String(required=True)
-        delivery_date = graphene.Date(required=True)
-        comment = graphene.String()
-        client_id = graphene.ID(required=True)
+        delivery_date = graphene.Date(required=False)
+        comment = graphene.String(required=False)
         package_ids = graphene.List(graphene.ID, required=True)
-        extra_attributes = graphene.JSONString()
+        send_email = graphene.Boolean(required=False, default_value=False)
 
     consolidate = graphene.Field(ConsolidateType)
 
@@ -21,23 +23,63 @@ class CreateConsolidate(graphene.Mutation):
         info,
         description,
         status,
-        delivery_date,
-        client_id,
         package_ids,
+        send_email=False,
+        delivery_date=None,
         comment=None,
-        extra_attributes=None,
     ):
-        client = Client.objects.get(pk=client_id)
+        if not info.context.user.is_superuser:
+            raise PermissionDenied("You do not have permission to perform this action.")
+
+        if not package_ids:
+            raise ValidationError("At least one package ID is required.")
+
+        packages = Package.objects.filter(id__in=package_ids)
+
+        if len(packages) != len(package_ids):
+            raise ValidationError("One or more packages do not exist.")
+
+        client = None
+        for package in packages:
+            if client is None:
+                client = package.client
+            elif package.client != client:
+                raise ValidationError("All packages must belong to the same client.")
+            if package.consolidate is not None:
+                raise ValidationError("Package already belongs to a consolidate.")
+
+        # Validate status
+        allowed_initial_statuses = [
+            Consolidate.Status.AWAITING_PAYMENT.value,
+            Consolidate.Status.PENDING.value,
+            Consolidate.Status.PROCESSING.value,
+        ]
+
+        if status not in [s.value for s in Consolidate.Status]:
+            raise ValidationError(f"Invalid status: '{status}' is not a valid Consolidate status.")
+
+        if status not in allowed_initial_statuses:
+            raise ValidationError(f"Invalid initial status: a new consolidate cannot start as '{status}'.")
+
         consolidate = Consolidate(
             description=description,
             status=status,
             delivery_date=delivery_date,
             comment=comment,
             client=client,
-            extra_attributes=extra_attributes or {},
         )
         consolidate.save()
-        consolidate.packages.set(package_ids)
+        consolidate.packages.set(packages)
+
+        if send_email:
+            subject = CONSOLIDATE_CREATED_SUBJECT
+            message = CONSOLIDATE_CREATED_MESSAGE
+            recipient_list = [client.email]
+            try:
+                send_consolidate_email(subject, message, recipient_list)
+            except Exception as e:
+                print(f"Failed to send email for consolidate creation: {e}")
+
         return CreateConsolidate(consolidate=consolidate)
 
 
@@ -54,12 +96,84 @@ class UpdateConsolidate(graphene.Mutation):
     consolidate = graphene.Field(ConsolidateType)
 
     def mutate(self, info, id, **kwargs):
-        consolidate = Consolidate.objects.get(pk=id)
+        user = info.context.user
+        if not user.is_superuser:
+            raise PermissionDenied("You do not have permission to perform this action.")
+
+        try:
+            consolidate = Consolidate.objects.get(pk=id)
+        except Consolidate.DoesNotExist:
+            raise ValidationError("Consolidate not found.")
+
+        # Status validation
+        if "status" in kwargs:
+            new_status = kwargs.pop("status")
+            if new_status not in [s.value for s in Consolidate.Status]:
+                raise ValidationError(f"Invalid status: '{new_status}' is not a valid Consolidate status.")
+
+            current_status = consolidate.status
+
+            # Define valid transitions
+            valid_transitions = {
+                Consolidate.Status.AWAITING_PAYMENT.value: [
+                    Consolidate.Status.PENDING.value,
+                    Consolidate.Status.CANCELLED.value,
+                ],
+                Consolidate.Status.PENDING.value: [
+                    Consolidate.Status.PROCESSING.value,
+                    Consolidate.Status.CANCELLED.value,
+                ],
+                Consolidate.Status.PROCESSING.value: [
+                    Consolidate.Status.IN_TRANSIT.value,
+                    Consolidate.Status.CANCELLED.value,
+                ],
+                Consolidate.Status.IN_TRANSIT.value: [
+                    Consolidate.Status.DELIVERED.value,
+                    Consolidate.Status.CANCELLED.value,
+                ],
+                Consolidate.Status.DELIVERED.value: [],  # No transitions from delivered
+                Consolidate.Status.CANCELLED.value: [],  # No transitions from cancelled
+            }
+
+            if (
+                new_status == Consolidate.Status.CANCELLED.value
+                and current_status != Consolidate.Status.DELIVERED.value
+            ):
+                # Cancelled is allowed from any state before delivered
+                pass
+            elif new_status not in valid_transitions.get(current_status, []):
+                raise ValidationError(f"Invalid status transition from '{current_status}' to '{new_status}'.")
+
+            consolidate.status = new_status
+
+        # Client immutability
+        kwargs.pop("client", None)
+
+        # Ignore extra_attributes
+        kwargs.pop("extra_attributes", None)
+
+        # Package validation
+        if "package_ids" in kwargs:
+            new_package_ids = kwargs.pop("package_ids")
+            if not new_package_ids:
+                raise ValidationError("At least one package ID is required.")
+
+            new_packages = Package.objects.filter(id__in=new_package_ids)
+
+            if len(new_packages) != len(new_package_ids):
+                raise ValidationError("One or more packages do not exist.")
+
+            client_id = consolidate.client.id
+            for package in new_packages:
+                if package.client.id != client_id:
+                    raise ValidationError("All packages must belong to the same client as the consolidate.")
+                if package.consolidate is not None and package.consolidate != consolidate:
+                    raise ValidationError(f"Package {package.id} already belongs to another consolidate.")
+            consolidate.packages.set(new_packages)
+
         for key, value in kwargs.items():
-            if key == "package_ids":
-                consolidate.packages.set(value)
-            else:
-                setattr(consolidate, key, value)
+            setattr(consolidate, key, value)
+
         consolidate.save()
         return UpdateConsolidate(consolidate=consolidate)
 
@@ -71,6 +185,11 @@ class DeleteConsolidate(graphene.Mutation):
     success = graphene.Boolean()
 
     def mutate(self, info, id):
+
+        user = info.context.user
+        if not user.is_superuser:
+            raise PermissionDenied("You do not have permission to perform this action.")
+
         try:
             Consolidate.objects.get(pk=id).delete()
             success = True
