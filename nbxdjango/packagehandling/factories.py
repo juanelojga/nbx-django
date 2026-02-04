@@ -86,6 +86,16 @@ class ConsolidateFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Consolidate
 
-    description = factory.Faker("text")
-    status = factory.Faker("word")
+    description = factory.Faker("text", max_nb_chars=200)
+    status = factory.Faker(
+        "random_element",
+        elements=[choice[0] for choice in Consolidate.Status.choices],
+    )
+    delivery_date = factory.Faker(
+        "date_between",
+        start_date="-30d",
+        end_date="+30d",
+    )
+    comment = factory.Faker("text", max_nb_chars=100)
     client = factory.SubFactory(ClientFactory)
+    extra_attributes = factory.LazyFunction(dict)
