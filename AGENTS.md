@@ -320,6 +320,15 @@ web: cd nbxdjango && gunicorn nbxdjango.wsgi --log-file -
 - **Mutations**: `packagehandling/schema/mutations.py`
 - **Types**: `packagehandling/schema/types.py`
 
+### GraphQL API Documentation
+
+See [GRAPHQL_API.md](./GRAPHQL_API.md) for complete documentation including:
+- All queries and mutations with examples
+- User permission matrices
+- Error handling reference
+- Common workflow examples
+- Type definitions and field descriptions
+
 ## Additional Notes
 
 - **Django Admin**: Available at `/admin/` with Package registered
