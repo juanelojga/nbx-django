@@ -4,6 +4,7 @@ exclude =
     .git,
     __pycache__,
     venv,
+    .venv,
     */migrations/*,
     */__init__.py,
     tests.py

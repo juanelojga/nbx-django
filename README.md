@@ -54,6 +54,8 @@ The application will be available at `http://127.0.0.1:8000/`.
 
 The interactive GraphQL interface is available at `http://127.0.0.1:8000/graphql` and is automatically enabled in the development environment (`DEBUG=True`).
 
+For complete GraphQL API documentation, see [GRAPHQL_API.md](./GRAPHQL_API.md).
+
 ## Deployment (Railway)
 
 This project is configured for continuous deployment to [Railway](https://railway.app/) via GitHub Actions.

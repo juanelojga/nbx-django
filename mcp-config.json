@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "django": {
+      "command": "python",
+      "args": ["-m", "mcp_django"],
+      "cwd": "/home/juanelojga/Code/nbx-django/nbxdjango",
+      "env": {
+        "DJANGO_SETTINGS_MODULE": "nbxdjango.settings"
+      }
+    }
+  }
+}
