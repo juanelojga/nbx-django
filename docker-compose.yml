@@ -1,15 +1,13 @@
-version: '3.8'
-
 services:
   db:
-    image: postgres:latest
+    image: postgres:16
     container_name: my-postgres-db
     environment:
       POSTGRES_DB: 'mydatabase'
       POSTGRES_USER: 'myuser'
       POSTGRES_PASSWORD: 'mypassword'
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - postgres_data:/var/lib/postgresql
     ports:
       - "5432:5432"
 

@@ -8,7 +8,8 @@ from ..models import Client, Consolidate, Package
 class UserType(DjangoObjectType):
     class Meta:
         model = get_user_model()
-        fields = "__all__"
+        fields = ("id", "email", "username", "first_name", "last_name", "is_active", "date_joined")
+        # Explicitly exclude: password, is_superuser, is_staff, groups, user_permissions
 
 
 class PackageType(DjangoObjectType):

@@ -12,7 +12,7 @@ class Client(models.Model):
     )
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
-    email = models.EmailField()
+    email = models.EmailField(unique=True)
     identification_number = models.CharField(max_length=255, null=True, blank=True)
     state = models.CharField(max_length=255, null=True, blank=True)
     city = models.CharField(max_length=255, null=True, blank=True)
@@ -23,6 +23,13 @@ class Client(models.Model):
     phone_number = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["email"]),
+            models.Index(fields=["identification_number"]),
+            models.Index(fields=["created_at"]),
+        ]
 
     @property
     def full_name(self):

@@ -25,5 +25,12 @@ class Consolidate(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["client", "-created_at"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["delivery_date"]),
+        ]
+
     def __str__(self):
         return f"Consolidate {self.id} for {self.client}"
