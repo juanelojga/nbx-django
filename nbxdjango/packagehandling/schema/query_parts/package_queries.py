@@ -25,7 +25,7 @@ class PackageQueries(graphene.ObjectType):
             raise ValueError("Invalid page_size. Valid values are 10, 20, 50, 100.")
 
         user = info.context.user
-        queryset = Package.objects.all()
+        queryset = Package.objects.select_related("client", "consolidate")
 
         if user.is_superuser:
             if client_id:

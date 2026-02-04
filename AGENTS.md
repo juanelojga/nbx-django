@@ -234,10 +234,36 @@ pre-commit run --all-files
 
 ### Test Data Generation
 Create fake data for manual testing:
+
+**Create clients with associated users:**
 ```bash
-python nbxdjango/manage.py create_fake_packages
+python nbxdjango/manage.py create_fake_clients --count 10
 ```
-This creates 10 clients/users and 100 packages.
+
+**Create standalone users:**
+```bash
+python nbxdjango/manage.py create_fake_users --count 5 --password testpass123
+```
+
+**Create packages for specific clients:**
+```bash
+# For a specific client by ID
+python nbxdjango/manage.py create_fake_packages --count 50 --client-id 1
+
+# For a specific client by email
+python nbxdjango/manage.py create_fake_packages --count 20 --client-email "user@example.com"
+
+# With random consolidation assignment
+python nbxdjango/manage.py create_fake_packages --count 30 --client-id 1 --with-consolidation
+```
+
+**Create consolidations with packages:**
+```bash
+# Create consolidations with packages for a specific client
+python nbxdjango/manage.py create_fake_consolidations --count 3 --client-id 1 --packages 5
+```
+
+See README.md for complete documentation on all fake data commands.
 
 ### Creating a Superuser (Non-Interactive)
 ```bash

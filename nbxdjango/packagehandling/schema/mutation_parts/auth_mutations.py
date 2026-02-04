@@ -14,6 +14,9 @@ from graphql_jwt.refresh_token.models import RefreshToken
 
 from ...utils import send_email
 
+# Frontend URL for password reset links
+FRONTEND_URL = getattr(django_settings, "FRONTEND_URL", "http://localhost:3000")
+
 
 class EmailAuth(graphene.Mutation):
     token = graphene.String()
@@ -63,8 +66,7 @@ class ForgotPassword(graphene.Mutation):
         token = token_generator.make_token(user)
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
 
-        # Replace with your frontend URL
-        reset_url = f"http://localhost:3000/reset-password?uid={uidb64}&token={token}"
+        reset_url = f"{FRONTEND_URL}/reset-password?uid={uidb64}&token={token}"
 
         send_email(
             subject="Reset Your Password",

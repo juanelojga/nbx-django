@@ -152,15 +152,118 @@ The email will be added to the queue and sent by the `qcluster` process.
 
 ## Creating Fake Data
 
-To create fake clients, users, and packages for testing purposes, you can use the `create_fake_packages` management command.
+To populate the database with fake data for testing and development purposes, use the following management commands. These commands use [factory_boy](https://factoryboy.readthedocs.io/) and [Faker](https://faker.readthedocs.io/) to generate realistic test data.
 
-Usage:
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `create_fake_users` | Creates fake users (without clients) |
+| `create_fake_clients` | Creates fake clients (each with an associated user) |
+| `create_fake_packages` | Creates fake packages for clients |
+| `create_fake_consolidations` | Creates fake consolidations (can include packages) |
+
+### Creating Fake Users
+
+Create users without associated clients:
 
 ```bash
-python nbxdjango/manage.py create_fake_packages
+# Create 10 users with default password 'password'
+python nbxdjango/manage.py create_fake_users
+
+# Create 5 users with custom password
+python nbxdjango/manage.py create_fake_users --count 5 --password mypass123
 ```
 
-This command will create 10 fake clients (each with an associated user) and 100 fake packages, randomly assigned to these clients.
+### Creating Fake Clients
+
+Create clients (each client automatically creates an associated user):
+
+```bash
+# Create 10 clients (default)
+python nbxdjango/manage.py create_fake_clients
+
+# Create 5 clients
+python nbxdjango/manage.py create_fake_clients --count 5
+```
+
+### Creating Fake Packages
+
+Create packages with various options:
+
+```bash
+# Create 100 packages distributed across random clients (default)
+python nbxdjango/manage.py create_fake_packages
+
+# Create 50 packages for a specific client by ID
+python nbxdjango/manage.py create_fake_packages --count 50 --client-id 1
+
+# Create packages for a specific client by email
+python nbxdjango/manage.py create_fake_packages --count 20 --client-email "user@example.com"
+
+# Create packages and assign them to a specific consolidation
+python nbxdjango/manage.py create_fake_packages --count 10 --consolidate-id 1
+
+# Create packages with random assignment to existing consolidations (50% chance)
+python nbxdjango/manage.py create_fake_packages --count 30 --client-id 1 --with-consolidation
+```
+
+**Note:** The `--consolidate-id` option automatically uses the consolidation's client. If you also specify `--client-id`, they must match.
+
+### Creating Fake Consolidations
+
+Create consolidations with optional packages:
+
+```bash
+# Create 10 consolidations for random clients (default)
+python nbxdjango/manage.py create_fake_consolidations
+
+# Create 5 consolidations for a specific client
+python nbxdjango/manage.py create_fake_consolidations --count 5 --client-id 1
+
+# Create consolidations with packages (3 packages each)
+python nbxdjango/manage.py create_fake_consolidations --count 3 --packages 3
+
+# Create consolidations with random package counts (1-5 packages each)
+python nbxdjango/manage.py create_fake_consolidations --count 5 --packages-min 1 --packages-max 5 --packages 1
+```
+
+### Complete Example Workflow
+
+Here's a complete example of setting up test data:
+
+```bash
+# 1. Create some clients (each gets a user automatically)
+python nbxdjango/manage.py create_fake_clients --count 5
+
+# 2. Create some additional standalone users
+python nbxdjango/manage.py create_fake_users --count 3 --password testpass
+
+# 3. Create consolidations with packages for client #1
+python nbxdjango/manage.py create_fake_consolidations \
+    --count 3 \
+    --client-id 1 \
+    --packages-min 2 \
+    --packages-max 5 \
+    --packages 1
+
+# 4. Create additional standalone packages for client #1
+python nbxdjango/manage.py create_fake_packages \
+    --count 20 \
+    --client-id 1 \
+    --with-consolidation
+```
+
+### Command Help
+
+For detailed help on any command, use:
+
+```bash
+python nbxdjango/manage.py create_fake_users --help
+python nbxdjango/manage.py create_fake_clients --help
+python nbxdjango/manage.py create_fake_packages --help
+python nbxdjango/manage.py create_fake_consolidations --help
+```
 
 ## Running Tests
 

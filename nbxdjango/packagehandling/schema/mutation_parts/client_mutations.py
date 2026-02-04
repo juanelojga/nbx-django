@@ -81,15 +81,27 @@ class UpdateClient(graphene.Mutation):
 class DeleteClient(graphene.Mutation):
     class Arguments:
         id = graphene.ID(required=True)
+        delete_user = graphene.Boolean(default_value=False)  # Explicit flag to delete associated user
 
     ok = graphene.Boolean()
+    message = graphene.String()
 
-    def mutate(self, info, id):
+    def mutate(self, info, id, delete_user=False):
         user = info.context.user
         if not user.is_superuser:
             raise PermissionDenied()
 
-        client = Client.objects.get(pk=id)
-        client.delete()
+        client = Client.objects.select_related("user").get(pk=id)
 
-        return DeleteClient(ok=True)
+        if delete_user and client.user:
+            client.user.delete()  # Client will be cascade-deleted
+            message = "Client and associated user deleted successfully."
+        else:
+            # Preserve user account but deactivate it
+            if client.user:
+                client.user.is_active = False
+                client.user.save()
+            client.delete()
+            message = "Client deleted. User account preserved but deactivated."
+
+        return DeleteClient(ok=True, message=message)

@@ -68,6 +68,11 @@ class ClientQueries(graphene.ObjectType):
         user = info.context.user
         if user.is_superuser:
             return Client.objects.get(pk=id)
-        if not hasattr(user, "client") or user.client.id != id:
+
+        # Use select_related to fetch user and client in one query
+        client = Client.objects.filter(pk=id).select_related("user").first()
+        if not client:
             raise PermissionDenied()
-        return Client.objects.get(pk=id)
+        if client.user != user:
+            raise PermissionDenied()
+        return client

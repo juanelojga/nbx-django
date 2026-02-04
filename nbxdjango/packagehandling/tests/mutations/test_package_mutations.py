@@ -1,7 +1,5 @@
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.test import RequestFactory
-from graphql.type import GraphQLResolveInfo as ResolveInfo
 from packagehandling.factories import (
     ClientFactory,
     ConsolidateFactory,
@@ -14,30 +12,6 @@ from packagehandling.schema.mutation_parts.package_mutations import (
     DeletePackage,
     UpdatePackage,
 )
-
-
-@pytest.fixture
-def info_with_user_factory():
-    def factory(user):
-        request_factory = RequestFactory()
-        request = request_factory.get("/graphql/")
-        request.user = user
-        return ResolveInfo(
-            field_name="",
-            field_nodes=[],
-            return_type=None,
-            parent_type=None,
-            path=None,
-            schema=None,
-            fragments=None,
-            root_value=None,
-            operation=None,
-            variable_values=None,
-            context=request,
-            is_awaitable=lambda: False,
-        )
-
-    return factory
 
 
 @pytest.mark.django_db

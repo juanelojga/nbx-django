@@ -28,9 +28,21 @@ class Package(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["barcode"]),
+            models.Index(fields=["client", "-created_at"]),
+            models.Index(fields=["consolidate"]),
+            models.Index(fields=["arrival_date"]),
+        ]
+
     def __str__(self):
         return f"Package {self.barcode}"
 
     def clean(self):
         if self.consolidate and self.client != self.consolidate.client:
             raise ValidationError("Package and Consolidate must belong to the same client.")
+
+    def save(self, *args, **kwargs):
+        self.clean()  # Call clean explicitly to ensure validation
+        super().save(*args, **kwargs)

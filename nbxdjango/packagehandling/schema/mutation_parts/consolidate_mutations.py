@@ -1,3 +1,5 @@
+import logging
+
 import graphene
 from django.core.exceptions import PermissionDenied, ValidationError
 from packagehandling.utils import send_email as send_consolidate_email
@@ -5,6 +7,8 @@ from packagehandling.utils import send_email as send_consolidate_email
 from ...emails.messages import CONSOLIDATE_CREATED_MESSAGE, CONSOLIDATE_CREATED_SUBJECT
 from ...models import Consolidate, Package
 from ..types import ConsolidateType
+
+logger = logging.getLogger(__name__)
 
 
 class CreateConsolidate(graphene.Mutation):
@@ -78,7 +82,7 @@ class CreateConsolidate(graphene.Mutation):
             try:
                 send_consolidate_email(subject, message, recipient_list)
             except Exception as e:
-                print(f"Failed to send email for consolidate creation: {e}")
+                logger.error(f"Failed to send email for consolidate creation: {e}", exc_info=True)
 
         return CreateConsolidate(consolidate=consolidate)
 
