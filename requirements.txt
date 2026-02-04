@@ -15,4 +15,3 @@ gunicorn
 dj-database-url
 whitenoise
 setuptools
-mcp-django

@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     "anymail",
     "django_q",
     "corsheaders",
-    "mcp_django",
 ]
 
 MIDDLEWARE = [
