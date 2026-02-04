@@ -43,6 +43,8 @@ jobs:
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/app_test
       DJANGO_SETTINGS_MODULE: nbxdjango.settings
+      SECRET_KEY: test-secret-key-not-for-production
+      DEBUG: true
       PYTHONDONTWRITEBYTECODE: 1
       PYTHONUNBUFFERED: 1
 
