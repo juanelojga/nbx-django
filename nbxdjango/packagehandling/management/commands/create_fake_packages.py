@@ -1,7 +1,6 @@
 import random
 
 from django.core.management.base import BaseCommand
-
 from packagehandling.factories import ClientFactory, PackageFactory
 from packagehandling.models import Client, Consolidate
 
@@ -72,9 +71,11 @@ class Command(BaseCommand):
                     client = consolidate.client
                     self.stdout.write(f"Using consolidation's client: {client.full_name}")
                 elif client != consolidate.client:
-                    self.stdout.write(self.style.ERROR(
-                        f"Specified client ({client}) does not match consolidation's client ({consolidate.client})"
-                    ))
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f"Specified client ({client}) does not match consolidation's client ({consolidate.client})"
+                        )
+                    )
                     return
             except Consolidate.DoesNotExist:
                 self.stdout.write(self.style.ERROR(f"Consolidation with ID {consolidate_id} not found"))
@@ -120,9 +121,7 @@ class Command(BaseCommand):
             )
             packages.append(package)
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Successfully created {len(packages)} packages."
-        ))
+        self.stdout.write(self.style.SUCCESS(f"Successfully created {len(packages)} packages."))
 
         # Show summary
         if consolidate:

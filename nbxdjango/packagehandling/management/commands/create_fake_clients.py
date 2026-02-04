@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand
-
 from packagehandling.factories import ClientFactory
 
 
@@ -17,12 +16,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         count = options["count"]
         self.stdout.write(f"Creating {count} fake clients with users...")
-        
+
         clients = ClientFactory.create_batch(count)
-        
-        self.stdout.write(self.style.SUCCESS(
-            f"Successfully created {len(clients)} clients with associated users."
-        ))
-        
+
+        self.stdout.write(self.style.SUCCESS(f"Successfully created {len(clients)} clients with associated users."))
+
         for client in clients:
             self.stdout.write(f"  - {client.full_name} ({client.email})")

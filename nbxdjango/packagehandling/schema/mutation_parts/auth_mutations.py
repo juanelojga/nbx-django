@@ -14,7 +14,6 @@ from graphql_jwt.refresh_token.models import RefreshToken
 
 from ...utils import send_email
 
-
 # Frontend URL for password reset links
 FRONTEND_URL = getattr(django_settings, "FRONTEND_URL", "http://localhost:3000")
 

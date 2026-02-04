@@ -14,17 +14,13 @@ class ConsolidateQueries(graphene.ObjectType):
         if user.is_superuser:
             return Consolidate.objects.select_related("client").prefetch_related("packages").all()
         if hasattr(user, "client"):
-            return Consolidate.objects.select_related("client").prefetch_related("packages").filter(
-                client=user.client
-            )
+            return Consolidate.objects.select_related("client").prefetch_related("packages").filter(client=user.client)
         raise PermissionDenied("You do not have permission to view this resource.")
 
     def resolve_consolidate_by_id(self, info, id):
         user = info.context.user
         try:
-            consolidate = Consolidate.objects.select_related("client").prefetch_related("packages").get(
-                pk=id
-            )
+            consolidate = Consolidate.objects.select_related("client").prefetch_related("packages").get(pk=id)
         except Consolidate.DoesNotExist:
             return None
 

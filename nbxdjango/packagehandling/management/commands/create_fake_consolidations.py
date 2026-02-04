@@ -1,7 +1,6 @@
 import random
 
 from django.core.management.base import BaseCommand
-
 from packagehandling.factories import ClientFactory, ConsolidateFactory, PackageFactory
 from packagehandling.models import Client
 
@@ -93,21 +92,19 @@ class Command(BaseCommand):
             consolidation = ConsolidateFactory(client=cons_client)
             consolidations.append(consolidation)
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Successfully created {len(consolidations)} consolidations."
-        ))
+        self.stdout.write(self.style.SUCCESS(f"Successfully created {len(consolidations)} consolidations."))
 
         # Create packages for consolidations if requested
         total_packages = 0
         if packages_count > 0:
-            self.stdout.write(f"Creating packages for consolidations...")
-            
+            self.stdout.write("Creating packages for consolidations...")
+
             for consolidation in consolidations:
                 # Determine number of packages for this consolidation
                 num_packages = packages_count
                 if packages_min != packages_max:
                     num_packages = random.randint(packages_min, packages_max)
-                
+
                 for _ in range(num_packages):
                     PackageFactory(
                         client=consolidation.client,
@@ -119,9 +116,7 @@ class Command(BaseCommand):
                     self.style.HTTP_NOT_MODIFIED,
                 )
 
-            self.stdout.write(self.style.SUCCESS(
-                f"Total packages created: {total_packages}"
-            ))
+            self.stdout.write(self.style.SUCCESS(f"Total packages created: {total_packages}"))
 
         # Show summary
         if client:

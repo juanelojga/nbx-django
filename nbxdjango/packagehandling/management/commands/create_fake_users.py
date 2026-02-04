@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand
-
 from packagehandling.factories import UserFactory
 
 
@@ -23,14 +22,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         count = options["count"]
         password = options["password"]
-        
+
         self.stdout.write(f"Creating {count} fake users...")
-        
+
         users = UserFactory.create_batch(count, password=password)
-        
-        self.stdout.write(self.style.SUCCESS(
-            f"Successfully created {len(users)} users."
-        ))
-        
+
+        self.stdout.write(self.style.SUCCESS(f"Successfully created {len(users)} users."))
+
         for user in users:
             self.stdout.write(f"  - {user.email} (password: {password})")
