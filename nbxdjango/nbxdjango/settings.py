@@ -179,7 +179,8 @@ ANYMAIL = {
 DEFAULT_FROM_EMAIL = "noreply@yourdomain.com"
 
 # Narbox Logo URL for email templates
-# Set this to your publicly hosted logo URL, e.g., "https://yourdomain.com/static/packagehandling/images/narbox-logo.png"
+# Set this to your publicly hosted logo URL, e.g.,
+# "https://yourdomain.com/static/packagehandling/images/narbox-logo.png"
 NARBOX_LOGO_URL = os.environ.get("NARBOX_LOGO_URL", "")
 
 Q_CLUSTER = {

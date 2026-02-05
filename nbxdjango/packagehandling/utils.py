@@ -34,17 +34,13 @@ def send_consolidation_notification_email(consolidation):
     if isinstance(consolidation, Consolidate):
         consolidate_obj = consolidation
     else:
-        consolidate_obj = Consolidate.objects.prefetch_related("packages").get(
-            pk=consolidation
-        )
+        consolidate_obj = Consolidate.objects.prefetch_related("packages").get(pk=consolidation)
 
     client = consolidate_obj.client
 
     # Calculate total cost from packages
     packages = list(consolidate_obj.packages.all())
-    total_cost = sum(
-        pkg.service_price or 0 for pkg in packages
-    )
+    total_cost = sum(pkg.service_price or 0 for pkg in packages)
 
     # Prepare context for the email template
     context = {
@@ -83,7 +79,8 @@ El total a cancelar será de ${total_cost:.2f}
 
 Puedes realizar tus pagos de flete bajo las siguientes alternativas:
 - Pago por punto de venta en nuestras oficinas.
-- Transferencia (ACH) o pago en efectivo a nuestra cuenta corriente no. 0349010555030 del Banco General a nombre de Servicios de Corretaje y Transporte S.A.
+- Transferencia (ACH) o pago en efectivo a nuestra cuenta corriente no. 0349010555030 "
+"del Banco General a nombre de Servicios de Corretaje y Transporte S.A.
 
 Cuando nos depositan enviarnos el comprobante a nuestro correo narbox@sercotran.com o al whatsapp 6612-6130.
 
