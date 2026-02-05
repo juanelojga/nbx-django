@@ -34,6 +34,7 @@ class TestEmailAuth:
         result = mutation.mutate(info, **args)
 
         assert result.token is not None
+        assert result.refreshToken is not None
         # Updated to check for email in payload instead of username
         assert result.payload["email"] == "test@example.com"
         assert result.refreshExpiresIn > 0
