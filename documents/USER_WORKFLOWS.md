@@ -9,6 +9,7 @@ This document explains the complete workflow flows for both **Admin (Superuser)*
 - [Overview](#overview)
 - [Admin (Superuser) Workflow](#admin-superuser-workflow)
 - [Client User Workflow](#client-user-workflow)
+- [Token Refresh Workflow](#token-refresh-workflow)
 - [Permission Matrix](#permission-matrix)
 - [Consolidation Status Workflow](#consolidation-status-workflow)
 
@@ -37,13 +38,22 @@ Obtain a JWT token to access the API:
 mutation {
   emailAuth(email: "admin@example.com", password: "adminpass") {
     token
+    refreshToken
     payload
     refreshExpiresIn
   }
 }
 ```
 
-Include the token in subsequent requests:
+**Response fields:**
+| Field | Description |
+|-------|-------------|
+| `token` | JWT access token (short-lived) |
+| `refreshToken` | Refresh token (long-lived, used to obtain new access tokens) |
+| `payload` | Token payload (contains user email, exp, etc.) |
+| `refreshExpiresIn` | Refresh token expiration time in seconds |
+
+Include the access token in subsequent requests:
 ```
 Authorization: JWT <your_token>
 ```
@@ -377,10 +387,20 @@ Log in with credentials provided by the admin:
 mutation {
   emailAuth(email: "john@example.com", password: "yourpassword") {
     token
+    refreshToken
     payload
+    refreshExpiresIn
   }
 }
 ```
+
+**Response fields:**
+| Field | Description |
+|-------|-------------|
+| `token` | JWT access token (short-lived) |
+| `refreshToken` | Refresh token (long-lived, used to obtain new access tokens) |
+| `payload` | Token payload (contains user email, exp, etc.) |
+| `refreshExpiresIn` | Refresh token expiration time in seconds |
 
 ---
 
@@ -607,6 +627,74 @@ mutation {
 
 ---
 
+## Token Refresh Workflow
+
+Access tokens are short-lived. When your access token expires, use the refresh token to obtain a new one without re-authenticating.
+
+### When to Refresh
+
+- Access tokens expire after a short period (configured server-side)
+- API requests return authentication errors when the token expires
+- Use the **refresh token** (not the expired access token) to get a new access token
+
+### Refresh Token Mutation
+
+```graphql
+mutation {
+  refreshToken(token: "<your_refresh_token>") {
+    token
+    payload
+    refreshExpiresIn
+  }
+}
+```
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `token` | String | Yes | The refresh token obtained from `emailAuth` |
+
+**Response:**
+| Field | Description |
+|-------|-------------|
+| `token` | New JWT access token |
+| `payload` | Token payload with updated expiration |
+| `refreshExpiresIn` | Refresh token expiration in seconds |
+
+### Complete Authentication Flow Example
+
+```graphql
+# 1. Initial login
+mutation Login {
+  emailAuth(email: "user@example.com", password: "password") {
+    token        # Store this - short lived access token
+    refreshToken # Store this - long lived refresh token
+    payload
+    refreshExpiresIn
+  }
+}
+
+# 2. Use access token in Authorization header for API calls:
+# Authorization: JWT <access_token>
+
+# 3. When access token expires, refresh it:
+mutation Refresh {
+  refreshToken(token: "<refresh_token>") {
+    token        # New access token
+    payload
+  }
+}
+
+# 4. Logout (revokes refresh token)
+mutation Logout {
+  revokeToken {
+    revoked
+  }
+}
+```
+
+---
+
 ## Permission Matrix
 
 ### Query Permissions
@@ -628,6 +716,7 @@ mutation {
 |----------|-------|--------|-----------|
 | **Authentication** ||||
 | `emailAuth` | ✅ | ✅ | ✅ |
+| `refreshToken` | ✅ | ✅ | ✅ |
 | `forgotPassword` | ✅ | ✅ | ✅ |
 | `resetPassword` | ✅ | ✅ | ✅ |
 | `revokeToken` | ✅ | ✅ | ❌ |
@@ -690,7 +779,17 @@ mutation {
 ## Complete Example: Admin Creating an Order
 
 ```graphql
-# 1. Create client
+# 1. Authenticate and get tokens
+mutation Login {
+  emailAuth(email: "admin@example.com", password: "adminpass") {
+    token
+    refreshToken
+    payload
+    refreshExpiresIn
+  }
+}
+
+# 2. Create client
 mutation CreateClient {
   createClient(
     firstName: "Alice"
@@ -702,7 +801,7 @@ mutation CreateClient {
   }
 }
 
-# 2. Create packages
+# 3. Create packages
 mutation CreatePackages {
   pkg1: createPackage(
     barcode: "PKG001"
@@ -725,7 +824,7 @@ mutation CreatePackages {
   ) { package { id barcode } }
 }
 
-# 3. Create consolidation
+# 4. Create consolidation
 mutation CreateConsolidation {
   createConsolidate(
     description: "Alice's tech order"
@@ -737,7 +836,7 @@ mutation CreateConsolidation {
   }
 }
 
-# 4. Update status as it progresses
+# 5. Update status as it progresses
 mutation UpdateStatus {
   updateConsolidate(
     id: 1
@@ -747,6 +846,14 @@ mutation UpdateStatus {
     consolidate { id status comment }
   }
 }
+
+# 6. Refresh token when access token expires
+mutation RefreshToken {
+  refreshToken(token: "<refresh_token>") {
+    token
+    payload
+  }
+}
 ```
 
 ---
@@ -754,7 +861,17 @@ mutation UpdateStatus {
 ## Complete Example: Client Viewing Their Data
 
 ```graphql
-# Client queries their own data
+# 1. Login to get tokens
+mutation Login {
+  emailAuth(email: "client@example.com", password: "password") {
+    token
+    refreshToken
+    payload
+    refreshExpiresIn
+  }
+}
+
+# 2. Client queries their own data (use access token in header)
 query MyData {
   me {
     firstName
