@@ -1,16 +1,24 @@
 """
 Tests for dashboard queries with user-based permissions.
 """
+
+from datetime import timedelta
 from unittest.mock import Mock
 
 import pytest
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
-from datetime import timedelta
-
-from packagehandling.factories import ClientFactory, ConsolidateFactory, PackageFactory, UserFactory
+from packagehandling.factories import (
+    ClientFactory,
+    ConsolidateFactory,
+    PackageFactory,
+    UserFactory,
+)
 from packagehandling.models import Consolidate
-from packagehandling.schema.query_parts.dashboard_queries import DashboardQueries, DashboardResolver
+from packagehandling.schema.query_parts.dashboard_queries import (
+    DashboardQueries,
+    DashboardResolver,
+)
 
 
 @pytest.mark.django_db
@@ -249,15 +257,11 @@ class TestDashboardResolver:
         PackageFactory(client=user_client)
 
         # Package in consolidation with in_transit status
-        in_transit_consolidation = ConsolidateFactory(
-            client=user_client, status=Consolidate.Status.IN_TRANSIT
-        )
+        in_transit_consolidation = ConsolidateFactory(client=user_client, status=Consolidate.Status.IN_TRANSIT)
         PackageFactory(client=user_client, consolidate=in_transit_consolidation)
 
         # Package in consolidation with delivered status
-        delivered_consolidation = ConsolidateFactory(
-            client=user_client, status=Consolidate.Status.DELIVERED
-        )
+        delivered_consolidation = ConsolidateFactory(client=user_client, status=Consolidate.Status.DELIVERED)
         PackageFactory(client=user_client, consolidate=delivered_consolidation)
 
         resolver = DashboardResolver(user)

@@ -1,11 +1,12 @@
-import graphene
-from django.core.exceptions import PermissionDenied
-from django.db.models import Sum, Q
-from django.utils import timezone
 from datetime import timedelta
 
+import graphene
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q, Sum
+from django.utils import timezone
+
 from ...models import Client, Consolidate, Package
-from ..types import PackageType, ConsolidateType
+from ..types import ConsolidateType, PackageType
 
 
 class DashboardStatsType(graphene.ObjectType):
@@ -101,26 +102,16 @@ class DashboardResolver:
             "packages_pending": package_qs.filter(
                 Q(consolidate__isnull=True) | Q(consolidate__status=Consolidate.Status.PENDING)
             ).count(),
-            "packages_in_transit": package_qs.filter(
-                consolidate__status=Consolidate.Status.IN_TRANSIT
-            ).count(),
-            "packages_delivered": package_qs.filter(
-                consolidate__status=Consolidate.Status.DELIVERED
-            ).count(),
+            "packages_in_transit": package_qs.filter(consolidate__status=Consolidate.Status.IN_TRANSIT).count(),
+            "packages_delivered": package_qs.filter(consolidate__status=Consolidate.Status.DELIVERED).count(),
             # Consolidation stats
             "total_consolidations": consolidation_qs.count(),
             "consolidations_awaiting_payment": consolidation_qs.filter(
                 status=Consolidate.Status.AWAITING_PAYMENT
             ).count(),
-            "consolidations_pending": consolidation_qs.filter(
-                status=Consolidate.Status.PENDING
-            ).count(),
-            "consolidations_processing": consolidation_qs.filter(
-                status=Consolidate.Status.PROCESSING
-            ).count(),
-            "consolidations_in_transit": consolidation_qs.filter(
-                status=Consolidate.Status.IN_TRANSIT
-            ).count(),
+            "consolidations_pending": consolidation_qs.filter(status=Consolidate.Status.PENDING).count(),
+            "consolidations_processing": consolidation_qs.filter(status=Consolidate.Status.PROCESSING).count(),
+            "consolidations_in_transit": consolidation_qs.filter(status=Consolidate.Status.IN_TRANSIT).count(),
         }
 
         # Admin-only stats
@@ -141,11 +132,7 @@ class DashboardResolver:
 
     def resolve_recent_packages(self, limit=5):
         """Get recent packages based on user type."""
-        return (
-            self._get_package_queryset()
-            .select_related("client", "consolidate")
-            .order_by("-created_at")[:limit]
-        )
+        return self._get_package_queryset().select_related("client", "consolidate").order_by("-created_at")[:limit]
 
     def resolve_recent_consolidations(self, limit=5):
         """Get recent consolidations based on user type."""
