@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tus paquetes han llegado a Panamá</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            color: #4a5568;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #f0f2f5;
+            padding: 40px 20px;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .logo img {
+            max-width: 200px;
+            height: auto;
+        }
+        .content {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        h1 {
+            color: #2d3748;
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .client-name {
+            color: #4a5568;
+            font-size: 18px;
+            margin-bottom: 25px;
+        }
+        .message {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .packages-list {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        .packages-list li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .total {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d3748;
+            margin: 25px 0;
+        }
+        .payment-options {
+            margin: 20px 0;
+        }
+        .payment-options ul {
+            padding-left: 20px;
+        }
+        .payment-options li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .contact-info {
+            margin: 25px 0;
+            line-height: 1.6;
+        }
+        .contact-info a {
+            color: #3182ce;
+            text-decoration: underline;
+        }
+        .closing {
+            margin-top: 30px;
+            line-height: 1.6;
+        }
+        .tagline {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            color: #718096;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #d69e2e;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            {% if logo_url %}
+            <img src="{{ logo_url }}" alt="NarBOX - Servicio de Courier" style="max-width: 200px;">
+            {% else %}
+            <!-- Logo URL not configured. Set NARBOX_LOGO_URL in your environment or settings. -->
+            <div style="font-size: 24px; font-weight: bold; color: #2d3748; margin-bottom: 10px;">
+                Nar<span style="color: #4a9c5d;">B</span><span style="color: #d69e2e;">o</span><span style="color: #e53e3e;">x</span>
+            </div>
+            <div style="font-size: 12px; color: #718096; letter-spacing: 2px;">SERVICIO DE COURIER</div>
+            {% endif %}
+        </div>
+
+        <div class="content">
+            <h1>Estimado(a) Cliente:</h1>
+
+            <p class="client-name">{{ client_name|upper }}</p>
+
+            <p class="message">
+                Hola! Tu paquetes llegaron a Panamá y están disponibles para ser retirados.
+            </p>
+
+            <ul class="packages-list">
+                {% for package in packages %}
+                <li>
+                    TRACKING {{ package.barcode }} - {{ package.courier }}{% if package.other_courier %} ({{ package.other_courier }}){% endif %}
+                    {% if package.weight %}- Peso: {{ package.weight|floatformat:2 }} {{ package.weight_unit|default:"lb" }}{% endif %}
+                    {% if package.length and package.width and package.height %}- Volumen {{ package.length|floatformat:0 }}x{{ package.width|floatformat:0 }}x{{ package.height|floatformat:0 }} {{ package.dimension_unit|default:"cm" }}³{% endif %}
+                    {% if package.service_price %}- Costo: ${{ package.service_price|floatformat:2 }}{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+
+            <p class="total">
+                El total a cancelar será de ${{ total_cost|floatformat:2 }}
+            </p>
+
+            <p class="message">
+                Puedes realizar tus pagos de flete bajo las siguientes alternativas:
+            </p>
+
+            <div class="payment-options">
+                <ul>
+                    <li>Pago por punto de venta en nuestras oficinas.</li>
+                    <li>Transferencia (ACH) o pago en efectivo a nuestra cuenta corriente no. 0349010555030 del Banco General a nombre de Servicios de Corretaje y Transporte S.A.</li>
+                </ul>
+            </div>
+
+            <p class="contact-info">
+                Cuando nos depositan enviarnos el comprobante a nuestro correo <a href="mailto:narbox@sercotran.com">narbox@sercotran.com</a> o al whatsapp 6612-6130.
+            </p>
+
+            <div class="closing">
+                <p>Atentamente,<br>Narboxcourier</p>
+                <p class="tagline">Su paquete 📦 con los mejores</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            © {% now "Y" %} <a href="#">Narbox</a> All rights reserved.
+        </div>
+    </div>
+</body>
+</html>
