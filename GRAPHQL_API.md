@@ -8,6 +8,7 @@ This document provides comprehensive documentation for the nbx-django GraphQL AP
 - [Authentication](#authentication)
 - [Types](#types)
 - [Queries](#queries)
+- [Dashboard](#dashboard)
 - [Mutations](#mutations)
 - [Error Handling](#error-handling)
 - [User Permissions](#user-permissions)
@@ -173,6 +174,36 @@ Represents a consolidation of packages.
 | `packages` | [PackageType] | List of consolidated packages |
 | `createdAt` | DateTime | Creation timestamp |
 | `updatedAt` | DateTime | Last update timestamp |
+
+### DashboardStatsType
+
+Represents dashboard statistics.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `totalPackages` | Int | Total number of packages |
+| `recentPackages` | Int | Packages created in last 30 days |
+| `packagesPending` | Int | Packages without consolidation or pending |
+| `packagesInTransit` | Int | Packages in transit |
+| `packagesDelivered` | Int | Packages delivered |
+| `totalConsolidations` | Int | Total number of consolidations |
+| `consolidationsPending` | Int | Consolidations with pending status |
+| `consolidationsProcessing` | Int | Consolidations being processed |
+| `consolidationsInTransit` | Int | Consolidations in transit |
+| `consolidationsAwaitingPayment` | Int | Consolidations awaiting payment |
+| `totalRealPrice` | Float | Total real price of all packages (admin only) |
+| `totalServicePrice` | Float | Total service price of all packages (admin only) |
+| `totalClients` | Int | Total number of clients (admin only) |
+
+### DashboardType
+
+Represents the main dashboard data.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `stats` | DashboardStatsType | Dashboard statistics |
+| `recentPackages` | [PackageType] | Recent packages (configurable limit) |
+| `recentConsolidations` | [ConsolidateType] | Recent consolidations (configurable limit) |
 
 **Consolidate Status Values:**
 
@@ -489,6 +520,80 @@ query {
 ```
 
 **Returns**: `ConsolidateType` or `null` if not found
+
+---
+
+## Dashboard
+
+### `dashboard`
+
+Returns dashboard statistics and recent items. Data is filtered based on user type.
+
+**Access**: Any authenticated user
+
+**Data Visibility:**
+
+| Data | Admin Users | Regular Users |
+|------|-------------|---------------|
+| Package Stats | All packages | Own packages only |
+| Consolidation Stats | All consolidations | Own consolidations only |
+| Financial Stats | All packages | Returns 0 (hidden) |
+| Client Count | All clients | Returns 0 (hidden) |
+| Recent Packages | All recent packages | Own recent packages only |
+| Recent Consolidations | All recent consolidations | Own recent consolidations only |
+
+**Arguments:**
+
+| Argument | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `recentPackages(limit: Int)` | Int | No | 5 | Number of recent packages to return |
+| `recentConsolidations(limit: Int)` | Int | No | 5 | Number of recent consolidations to return |
+
+```graphql
+query {
+  dashboard {
+    stats {
+      totalPackages
+      recentPackages
+      packagesPending
+      packagesInTransit
+      packagesDelivered
+      totalConsolidations
+      consolidationsPending
+      consolidationsProcessing
+      consolidationsInTransit
+      consolidationsAwaitingPayment
+      totalRealPrice
+      totalServicePrice
+      totalClients
+    }
+    recentPackages(limit: 5) {
+      id
+      barcode
+      description
+      realPrice
+      servicePrice
+      client {
+        fullName
+      }
+    }
+    recentConsolidations(limit: 5) {
+      id
+      description
+      status
+      deliveryDate
+      packages {
+        barcode
+      }
+    }
+  }
+}
+```
+
+**Returns**: `DashboardType`
+
+**Errors:**
+- `PermissionDenied`: If user is not authenticated
 
 ---
 
@@ -1199,6 +1304,7 @@ mutation {
 |-----------|-----------|--------------|-----------|
 | **Queries** ||||
 | `me` | ✅ | ✅ | ❌ |
+| `dashboard` | All data | Own data | ❌ |
 | `allClients` | ✅ | ❌ | ❌ |
 | `client` | Any | Own only | ❌ |
 | `allPackages` | All + filter by client | Own only | ❌ |
