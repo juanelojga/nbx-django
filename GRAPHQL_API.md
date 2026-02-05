@@ -37,12 +37,13 @@ The API uses JWT (JSON Web Token) authentication.
 
 ### Getting a Token
 
-Use the `emailAuth` mutation to obtain a token:
+Use the `emailAuth` mutation to obtain access and refresh tokens:
 
 ```graphql
 mutation {
   emailAuth(email: "user@example.com", password: "password") {
     token
+    refreshToken
     payload
     refreshExpiresIn
   }
@@ -59,9 +60,11 @@ Authorization: JWT <your_token>
 
 ### Token Refresh
 
+Use the `refreshToken` mutation with the **refresh token** (not the access token) to obtain a new access token:
+
 ```graphql
 mutation {
-  refreshToken(token: "<your_token>") {
+  refreshToken(token: "<your_refresh_token>") {
     token
     payload
   }
@@ -618,6 +621,7 @@ Authenticates a user with email and password, returns JWT token.
 mutation {
   emailAuth(email: "user@example.com", password: "password") {
     token
+    refreshToken
     payload
     refreshExpiresIn
   }
@@ -628,7 +632,8 @@ mutation {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `token` | String | JWT access token |
+| `token` | String | JWT access token (short-lived) |
+| `refreshToken` | String | Refresh token (long-lived, used to obtain new access tokens) |
 | `payload` | GenericScalar | Token payload (includes email, username, exp) |
 | `refreshExpiresIn` | Int | Refresh token expiration in seconds |
 
@@ -1431,12 +1436,13 @@ Returned for authentication failures.
 mutation Login {
   emailAuth(email: "admin@example.com", password: "adminpass") {
     token
+    refreshToken
     payload
     refreshExpiresIn
   }
 }
 
-# 2. Access protected query with Authorization: JWT <token> header
+# 2. Access protected query with Authorization: JWT <access_token> header
 query GetMyInfo {
   me {
     id
@@ -1445,9 +1451,9 @@ query GetMyInfo {
   }
 }
 
-# 3. Refresh token when expired
+# 3. Refresh access token when expired (use refreshToken, not access token)
 mutation Refresh {
-  refreshToken(token: "<old_token>") {
+  refreshToken(token: "<refresh_token>") {
     token
     payload
   }

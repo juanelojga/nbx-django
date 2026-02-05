@@ -11,6 +11,7 @@ from graphene.types.generic import GenericScalar
 from graphql import GraphQLError
 from graphql_jwt import utils
 from graphql_jwt.refresh_token.models import RefreshToken
+from graphql_jwt.refresh_token.shortcuts import create_refresh_token
 
 from ...utils import send_email
 
@@ -20,6 +21,7 @@ FRONTEND_URL = getattr(django_settings, "FRONTEND_URL", "http://localhost:3000")
 
 class EmailAuth(graphene.Mutation):
     token = graphene.String()
+    refreshToken = graphene.String()
     payload = GenericScalar()
     refreshExpiresIn = graphene.Int()
 
@@ -32,7 +34,12 @@ class EmailAuth(graphene.Mutation):
         if user is None:
             raise GraphQLError("Invalid credentials")
 
+        # Generate access token
         token = graphql_jwt.shortcuts.get_token(user)
+
+        # Generate refresh token
+        refresh_token = create_refresh_token(user)
+
         refresh_delta = getattr(django_settings, "JWT_REFRESH_EXPIRATION_DELTA", timedelta(days=7))
 
         # Ensure `payload` explicitly includes the email and optional username
@@ -43,6 +50,7 @@ class EmailAuth(graphene.Mutation):
 
         return EmailAuth(
             token=token,
+            refreshToken=refresh_token.token,
             payload=payload,
             refreshExpiresIn=int(refresh_delta.total_seconds()),
         )
