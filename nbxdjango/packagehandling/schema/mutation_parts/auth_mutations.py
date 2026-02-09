@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import graphene
-import graphql_jwt
 from django.conf import settings as django_settings
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -12,6 +11,7 @@ from graphql import GraphQLError
 from graphql_jwt import utils
 from graphql_jwt.refresh_token.models import RefreshToken
 from graphql_jwt.refresh_token.shortcuts import create_refresh_token
+from graphql_jwt.shortcuts import get_token
 
 from ...utils import send_email
 
@@ -35,7 +35,7 @@ class EmailAuth(graphene.Mutation):
             raise GraphQLError("Invalid credentials")
 
         # Generate access token
-        token = graphql_jwt.shortcuts.get_token(user)
+        token = get_token(user)
 
         # Generate refresh token
         refresh_token = create_refresh_token(user)
@@ -134,3 +134,57 @@ class CustomRevokeToken(graphene.Mutation):
             return CustomRevokeToken(revoked=True)
         except RefreshToken.DoesNotExist:
             raise GraphQLError("Refresh token not found.")
+
+
+class RefreshWithToken(graphene.Mutation):
+    """
+    Refresh JWT access token using a refresh token string.
+    This mutation accepts the refresh token string directly and returns a new access token.
+    Optionally rotates the refresh token for enhanced security.
+    """
+
+    token = graphene.String()
+    refreshToken = graphene.String()
+    payload = GenericScalar()
+    refreshExpiresIn = graphene.Int()
+
+    class Arguments:
+        refreshToken = graphene.String(required=True)
+
+    def mutate(self, info, refreshToken):
+        # Look up the refresh token in the database
+        try:
+            refresh_token_obj = RefreshToken.objects.get(token=refreshToken)
+        except RefreshToken.DoesNotExist:
+            raise GraphQLError("Invalid refresh token")
+
+        # Check if the refresh token is expired
+        if refresh_token_obj.is_expired(info.context):
+            raise GraphQLError("Refresh token has expired")
+
+        # Check if the refresh token is revoked
+        if refresh_token_obj.revoked:
+            raise GraphQLError("Refresh token has been revoked")
+
+        # Get the user associated with the refresh token
+        user = refresh_token_obj.user
+
+        # Generate a new access token
+        new_access_token = get_token(user)
+
+        # Generate payload
+        payload = utils.jwt_payload(user)
+        payload["email"] = user.email
+        if user.username:
+            payload["username"] = user.username
+
+        # Rotate the refresh token (generate a new one and revoke the old one)
+        new_refresh_token = create_refresh_token(user, refresh_token_obj)
+        refresh_delta = getattr(django_settings, "JWT_REFRESH_EXPIRATION_DELTA", timedelta(days=7))
+
+        return RefreshWithToken(
+            token=new_access_token,
+            refreshToken=new_refresh_token.token,
+            payload=payload,
+            refreshExpiresIn=int(refresh_delta.total_seconds()),
+        )

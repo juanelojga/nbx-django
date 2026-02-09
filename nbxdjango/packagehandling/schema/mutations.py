@@ -4,6 +4,7 @@ from .mutation_parts.auth_mutations import (
     CustomRevokeToken,
     EmailAuth,
     ForgotPassword,
+    RefreshWithToken,
     ResetPassword,
 )
 from .mutation_parts.client_mutations import CreateClient, DeleteClient, UpdateClient
@@ -25,6 +26,7 @@ class AuthMutations(graphene.ObjectType):
     forgot_password = ForgotPassword.Field()
     reset_password = ResetPassword.Field()
     revoke_token = CustomRevokeToken.Field()
+    refresh_with_token = RefreshWithToken.Field()
 
 
 class ClientMutations(graphene.ObjectType):
