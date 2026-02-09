@@ -298,9 +298,11 @@ DJANGO_SUPERUSER_USERNAME=admin DJANGO_SUPERUSER_EMAIL=admin@example.com DJANGO_
 | `CORS_ALLOWED_ORIGINS` | Allowed CORS origins |
 
 ### Authentication
-- JWT tokens with 7-day refresh expiration
+- JWT tokens with 7-day refresh expiration (custom timezone-aware handler)
+- Access tokens expire in 5 minutes
 - Custom email-based authentication backend
 - Password reset via email
+- **Note**: Custom `JWT_REFRESH_EXPIRED_HANDLER` implemented in `packagehandling/jwt_utils.py` to fix timezone-aware datetime handling bug in the default `django-graphql-jwt` implementation
 
 ### CORS
 - `CORS_ALLOW_ALL_ORIGINS = False` in production

@@ -173,6 +173,7 @@ GRAPHQL_JWT = {
     "JWT_REFRESH_EXPIRATION_DELTA": datetime.timedelta(days=7),
     "JWT_EXPIRATION_DELTA": datetime.timedelta(minutes=5),
     "JWT_ALLOW_REFRESH": True,
+    "JWT_REFRESH_EXPIRED_HANDLER": "packagehandling.jwt_utils.custom_refresh_has_expired",
 }
 
 EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
