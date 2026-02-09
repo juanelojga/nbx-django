@@ -55,3 +55,11 @@ pytest_cache/
 .DS_Store
 Thumbs.db
 .env
+
+# SSL certificates for local HTTPS development
+cert
+cert.crt
+cert.key
+*.pem
+*.crt
+*.key

@@ -46,39 +46,62 @@ python nbxdjango/manage.py migrate
 
 ### 4. Running the Development Server
 
-Start the Django development server:
+#### Option A: HTTP (Standard)
+
+Start the Django development server with HTTP:
 ```bash
 python nbxdjango/manage.py runserver
 ```
 The application will be available at `http://127.0.0.1:8000/`.
 
-The interactive GraphQL interface is available at `http://127.0.0.1:8000/graphql` and is automatically enabled in the development environment (`DEBUG=True`).
+#### Option B: HTTPS (Development with SSL)
+
+For local HTTPS support (useful when your browser redirects to HTTPS or you need to test secure contexts):
+
+```bash
+python nbxdjango/manage.py runserver_plus --cert-file cert
+```
+
+This command:
+- Auto-generates a self-signed SSL certificate on first run
+- Starts the server at `https://127.0.0.1:8000/`
+- Requires `django-extensions` and `werkzeug` (already in `requirements-dev.txt`)
+
+**Note**: Your browser will show a security warning for self-signed certificates. This is expected and safe for local development. Click "Advanced" → "Proceed to localhost" to continue.
+
+The interactive GraphQL interface is available at `http://127.0.0.1:8000/graphql` (or `https://` if using runserver_plus) and is automatically enabled in the development environment (`DEBUG=True`).
 
 For complete GraphQL API documentation, see [GRAPHQL_API.md](./GRAPHQL_API.md).
 
-## Deployment (Railway)
+## Production Deployment
 
-This project is configured for continuous deployment to [Railway](https://railway.app/) via GitHub Actions.
+This project is configured for deployment to [Railway](https://railway.app/) with automated CI/CD via GitHub Actions.
 
-### How it Works
+**📖 For complete production deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)**
 
-1.  **CI/CD Pipeline**: The workflow is defined in `.github/workflows/ci.yml`.
-2.  **Triggers**: A push or merge to the `main` branch will trigger the pipeline.
-3.  **Testing**: The pipeline first installs dependencies, runs database migrations on a test database, and executes the test suite using `pytest`.
-4.  **Deployment**: If the tests pass, the `deploy` job uses the [Railway CLI Action](https://github.com/railwayapp/railway-action) to deploy the application.
-5.  **Release Phase**: Before the new version goes live, Railway runs the `release` command from the `Procfile` (`python nbxdjango/manage.py migrate`) to run production database migrations.
-6.  **Web Process**: The application is served by `gunicorn`, as defined in the `web` command of the `Procfile`.
+### Quick Overview
 
-### Production Environment Variables
+- **Platform**: Railway (PaaS)
+- **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
+- **Deploy Trigger**: Push to `main` branch (after tests pass)
+- **Database**: PostgreSQL (Railway-managed)
+- **Web Server**: Gunicorn
+- **Background Jobs**: Django-Q worker (separate service)
 
-The following environment variables must be set in the Railway project settings:
+### Essential Environment Variables
 
-*   `DATABASE_URL`: Provided by the Railway PostgreSQL service.
-*   `SECRET_KEY`: A strong, randomly generated secret key.
-*   `ALLOWED_HOSTS`: The domain provided by Railway (e.g., `web-production-xxxx.up.railway.app`).
-*   `DEBUG`: Set to `False`.
-*   `MAILGUN_API_KEY`: Your Mailgun API key.
-*   `MAILGUN_SENDER_DOMAIN`: Your Mailgun sender domain.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET_KEY` | ✅ Yes | Django secret key ([generate](DEPLOYMENT.md#secret_key-management)) |
+| `DEBUG` | ✅ Yes | Must be `False` in production |
+| `DATABASE_URL` | ✅ Yes | Auto-provided by Railway PostgreSQL |
+| `ALLOWED_HOSTS` | ✅ Yes | Your Railway domain(s) |
+| `MAILGUN_API_KEY` | ✅ Yes | For email sending |
+| `MAILGUN_SENDER_DOMAIN` | ✅ Yes | Verified Mailgun domain |
+| `CORS_ALLOWED_ORIGINS` | Recommended | Your frontend URL(s) |
+| `FRONTEND_URL` | Recommended | For password reset links |
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete environment variable documentation, Railway setup guide, CI/CD configuration, security best practices, and troubleshooting.
 
 ## Asynchronous Email Setup (Django-Q + Mailgun)
 
