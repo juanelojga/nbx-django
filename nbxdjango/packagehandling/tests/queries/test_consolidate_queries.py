@@ -12,8 +12,8 @@ class TestAllConsolidatesQuery(JSONWebTokenTestCase):
     """Test allConsolidates query with pagination, filtering, and ordering."""
 
     ALL_CONSOLIDATES_QUERY = """
-        query AllConsolidates($page: Int, $pageSize: Int, $orderBy: String, $status: String) {
-            allConsolidates(page: $page, pageSize: $pageSize, orderBy: $orderBy, status: $status) {
+        query AllConsolidates($page: Int, $pageSize: Int, $orderBy: String, $status: String, $search: String) {
+            allConsolidates(page: $page, pageSize: $pageSize, orderBy: $orderBy, status: $status, search: $search) {
                 results {
                     id
                     description
@@ -123,12 +123,12 @@ class TestAllConsolidatesQuery(JSONWebTokenTestCase):
     def test_custom_pagination_values(self):
         """Test custom pagination with page=2, pageSize=20."""
         self.client.authenticate(self.admin_user)
-        
+
         # Create more data to test pagination (currently have 5, need more for page 2 with pageSize=20)
         for _ in range(35):
             ConsolidateFactory(client=self.client1)
         # Now we have 40 total
-        
+
         variables = {"page": 2, "pageSize": 20}
         response = self.client.execute(self.ALL_CONSOLIDATES_QUERY, variables=variables)
 
@@ -364,6 +364,128 @@ class TestAllConsolidatesQuery(JSONWebTokenTestCase):
         data = response.data["allConsolidates"]
         assert data["totalCount"] == 1  # Only client1's pending consolidate
         assert data["results"][0]["client"]["id"] == str(self.client1.id)
+
+    # Search tests
+    def test_search_by_client_first_name(self):
+        """Test search by client first name (partial match)."""
+        self.client.authenticate(self.admin_user)
+        # Search for part of client1's first name
+        variables = {"search": self.client1.first_name[:3]}
+        response = self.client.execute(self.ALL_CONSOLIDATES_QUERY, variables=variables)
+
+        assert response.errors is None
+        data = response.data["allConsolidates"]
+        # Should find all consolidates for client1
+        assert data["totalCount"] == 3
+        for consolidate in data["results"]:
+            assert consolidate["client"]["id"] == str(self.client1.id)
+
+    def test_search_by_client_last_name(self):
+        """Test search by client last name (partial match)."""
+        self.client.authenticate(self.admin_user)
+        # Search for part of client2's last name
+        variables = {"search": self.client2.last_name[:3]}
+        response = self.client.execute(self.ALL_CONSOLIDATES_QUERY, variables=variables)
+
+        assert response.errors is None
+        data = response.data["allConsolidates"]
+        # Should find all consolidates for client2
+        assert data["totalCount"] == 2
+        for consolidate in data["results"]:
+            assert consolidate["client"]["id"] == str(self.client2.id)
+
+    def test_search_by_client_email(self):
+        """Test search by client email (partial match)."""
+        self.client.authenticate(self.admin_user)
+        # Search for part of client1's email
+        variables = {"search": "client1"}
+        response = self.client.execute(self.ALL_CONSOLIDATES_QUERY, variables=variables)
+
+        assert response.errors is None
+        data = response.data["allConsolidates"]
+        assert data["totalCount"] == 3
+        for consolidate in data["results"]:
+            assert consolidate["client"]["id"] == str(self.client1.id)
+
+    def test_search_case_insensitive(self):
+        """Test that search is case-insensitive."""
+        self.client.authenticate(self.admin_user)
+        # Search with uppercase version of client1's email
+        variables = {"search": "CLIENT1"}
+        response = self.client.execute(self.ALL_CONSOLIDATES_QUERY, variables=variables)
+
+        assert response.errors is None
+        data = response.data["allConsolidates"]
+        assert data["totalCount"] == 3
+        for consolidate in data["results"]:
+            assert consolidate["client"]["id"] == str(self.client1.id)
+
+    def test_search_with_no_results(self):
+        """Test search with no matching results."""
+        self.client.authenticate(self.admin_user)
+        variables = {"search": "nonexistent_client_xyz"}
+        response = self.client.execute(self.ALL_CONSOLIDATES_QUERY, variables=variables)
+
+        assert response.errors is None
+        data = response.data["allConsolidates"]
+        assert data["totalCount"] == 0
+        assert len(data["results"]) == 0
+
+    def test_search_combined_with_status_filtering(self):
+        """Test search combined with status filtering."""
+        self.client.authenticate(self.admin_user)
+        # Search for client1 and filter by PENDING status
+        variables = {"search": "client1", "status": Consolidate.Status.PENDING}
+        response = self.client.execute(self.ALL_CONSOLIDATES_QUERY, variables=variables)
+
+        assert response.errors is None
+        data = response.data["allConsolidates"]
+        assert data["totalCount"] == 1
+        assert data["results"][0]["status"] == "PENDING"
+        assert data["results"][0]["client"]["id"] == str(self.client1.id)
+
+    def test_search_combined_with_pagination(self):
+        """Test search combined with pagination."""
+        self.client.authenticate(self.admin_user)
+        # Create more consolidates for client1 to test pagination
+        for _ in range(10):
+            ConsolidateFactory(client=self.client1)
+        # Now client1 has 13 consolidates total
+
+        variables = {"search": "client1", "page": 1, "pageSize": 10}
+        response = self.client.execute(self.ALL_CONSOLIDATES_QUERY, variables=variables)
+
+        assert response.errors is None
+        data = response.data["allConsolidates"]
+        assert data["totalCount"] == 13
+        assert len(data["results"]) == 10
+        assert data["hasNext"] is True
+        assert data["hasPrevious"] is False
+
+    def test_search_respects_user_permissions(self):
+        """Test that search respects user permissions (clients see only their own)."""
+        self.client.authenticate(self.client1.user)
+        # Try to search for client2's email while logged in as client1
+        variables = {"search": "client2"}
+        response = self.client.execute(self.ALL_CONSOLIDATES_QUERY, variables=variables)
+
+        assert response.errors is None
+        data = response.data["allConsolidates"]
+        # Should return 0 results because client1 user can't see client2's consolidates
+        assert data["totalCount"] == 0
+        assert len(data["results"]) == 0
+
+    def test_admin_search_across_all_clients(self):
+        """Test that admin can search across all clients."""
+        self.client.authenticate(self.admin_user)
+        # Search for "example.com" which is in both client emails
+        variables = {"search": "example.com"}
+        response = self.client.execute(self.ALL_CONSOLIDATES_QUERY, variables=variables)
+
+        assert response.errors is None
+        data = response.data["allConsolidates"]
+        # Should find all 5 consolidates (3 from client1 + 2 from client2)
+        assert data["totalCount"] == 5
 
 
 @pytest.mark.django_db

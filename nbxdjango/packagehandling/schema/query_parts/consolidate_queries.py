@@ -1,5 +1,6 @@
 import graphene
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 
 from ...models import Consolidate
 from ..types import ConsolidateConnection, ConsolidateType
@@ -8,6 +9,7 @@ from ..types import ConsolidateConnection, ConsolidateType
 class ConsolidateQueries(graphene.ObjectType):
     all_consolidates = graphene.Field(
         ConsolidateConnection,
+        search=graphene.String(),
         page=graphene.Int(),
         page_size=graphene.Int(),
         order_by=graphene.String(),
@@ -15,7 +17,7 @@ class ConsolidateQueries(graphene.ObjectType):
     )
     consolidate_by_id = graphene.Field(ConsolidateType, id=graphene.ID())
 
-    def resolve_all_consolidates(root, info, page=1, page_size=10, order_by=None, status=None):
+    def resolve_all_consolidates(root, info, search=None, page=1, page_size=10, order_by=None, status=None):
         # Validate page_size
         if page_size not in [10, 20, 50, 100]:
             raise ValueError("Invalid page_size. Valid values are 10, 20, 50, 100.")
@@ -30,6 +32,14 @@ class ConsolidateQueries(graphene.ObjectType):
             queryset = queryset.filter(client=user.client)
         else:
             raise PermissionDenied("You do not have permission to view this resource.")
+
+        # Search filtering
+        if search:
+            queryset = queryset.filter(
+                Q(client__first_name__icontains=search)
+                | Q(client__last_name__icontains=search)
+                | Q(client__email__icontains=search)
+            )
 
         # Status filtering
         if status:
