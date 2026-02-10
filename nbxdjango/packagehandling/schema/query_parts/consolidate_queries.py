@@ -2,20 +2,65 @@ import graphene
 from django.core.exceptions import PermissionDenied
 
 from ...models import Consolidate
-from ..types import ConsolidateType
+from ..types import ConsolidateConnection, ConsolidateType
 
 
 class ConsolidateQueries(graphene.ObjectType):
-    all_consolidates = graphene.List(ConsolidateType)
+    all_consolidates = graphene.Field(
+        ConsolidateConnection,
+        page=graphene.Int(),
+        page_size=graphene.Int(),
+        order_by=graphene.String(),
+        status=graphene.String(),
+    )
     consolidate_by_id = graphene.Field(ConsolidateType, id=graphene.ID())
 
-    def resolve_all_consolidates(self, info):
+    def resolve_all_consolidates(root, info, page=1, page_size=10, order_by=None, status=None):
+        # Validate page_size
+        if page_size not in [10, 20, 50, 100]:
+            raise ValueError("Invalid page_size. Valid values are 10, 20, 50, 100.")
+
         user = info.context.user
+        queryset = Consolidate.objects.select_related("client").prefetch_related("packages")
+
+        # Permission checks
         if user.is_superuser:
-            return Consolidate.objects.select_related("client").prefetch_related("packages").all()
-        if hasattr(user, "client"):
-            return Consolidate.objects.select_related("client").prefetch_related("packages").filter(client=user.client)
-        raise PermissionDenied("You do not have permission to view this resource.")
+            pass  # Admin can see all consolidates
+        elif hasattr(user, "client"):
+            queryset = queryset.filter(client=user.client)
+        else:
+            raise PermissionDenied("You do not have permission to view this resource.")
+
+        # Status filtering
+        if status:
+            queryset = queryset.filter(status=status)
+
+        # Ordering
+        if order_by:
+            order_by_field = order_by.replace("-", "")
+            if order_by_field not in ["delivery_date", "created_at", "status"]:
+                raise ValueError("Invalid order_by value.")
+            queryset = queryset.order_by(order_by)
+        else:
+            # Default ordering: newest first
+            queryset = queryset.order_by("-created_at")
+
+        # Pagination
+        total_count = queryset.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        items = queryset[start:end]
+        has_next = end < total_count
+        has_previous = start > 0
+
+        return ConsolidateConnection(
+            results=items,
+            total_count=total_count,
+            page=page,
+            page_size=page_size,
+            has_next=has_next,
+            has_previous=has_previous,
+        )
 
     def resolve_consolidate_by_id(self, info, id):
         user = info.context.user
