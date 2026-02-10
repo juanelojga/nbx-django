@@ -18,6 +18,7 @@ This guide provides comprehensive instructions for deploying the **nbx-django** 
 
 **nbx-django** is deployed to [Railway](https://railway.app/) using:
 - **Platform**: Railway (PaaS)
+- **Python Version**: 3.11.x (pinned via `.python-version` and `runtime.txt`)
 - **Web Server**: Gunicorn
 - **Database**: PostgreSQL (Railway-managed)
 - **Static Files**: WhiteNoise
@@ -99,6 +100,7 @@ These variables have sensible defaults but can be customized:
 - GitHub account with access to the repository
 - Railway account ([Sign up](https://railway.app/))
 - Mailgun account for email sending ([Sign up](https://signup.mailgun.com/))
+- **Python 3.11.x** (required for Railway deployment - specified in `.python-version` and `runtime.txt`)
 
 ### Step 1: Create Railway Project
 
@@ -507,7 +509,31 @@ ALLOWED_HOSTS=app.railway.app,api.yourdomain.com,yourdomain.com
 
 ### Common Issues and Solutions
 
-#### 1. Deployment Fails with "SECRET_KEY not set"
+#### 1. Python Version Compatibility Error (pkg_resources)
+
+**Symptom**: Deployment fails with `ModuleNotFoundError: No module named 'pkg_resources'` or `django_q` import errors
+
+**Root Cause**: Railway is using Python 3.13, but `django-q` requires `pkg_resources` which has compatibility issues with Python 3.13.
+
+**Solution**:
+The project includes `.python-version` and `runtime.txt` files that pin Python to 3.11.x. Ensure these files exist:
+
+```bash
+# .python-version
+3.11.10
+
+# runtime.txt
+python-3.11.10
+```
+
+Railway will automatically detect these files and use Python 3.11 instead of the latest version.
+
+**Verification**:
+1. Check deployment logs for `Using Python version 3.11.x`
+2. Ensure the files are committed to the repository
+3. Trigger a new deployment after adding these files
+
+#### 2. Deployment Fails with "SECRET_KEY not set"
 
 **Symptom**: Build fails, error mentions `SECRET_KEY`
 
@@ -516,7 +542,7 @@ ALLOWED_HOSTS=app.railway.app,api.yourdomain.com,yourdomain.com
 2. Add to Railway variables: `SECRET_KEY=<generated-key>`
 3. Redeploy
 
-#### 2. Database Connection Errors
+#### 3. Database Connection Errors
 
 **Symptom**: `django.db.utils.OperationalError` or connection refused
 
@@ -532,7 +558,7 @@ ALLOWED_HOSTS=app.railway.app,api.yourdomain.com,yourdomain.com
 python nbxdjango/manage.py dbshell
 ```
 
-#### 3. Static Files Not Loading (404 errors)
+#### 4. Static Files Not Loading (404 errors)
 
 **Symptom**: CSS/JS/images return 404 errors
 
@@ -554,7 +580,7 @@ MIDDLEWARE = [
 ]
 ```
 
-#### 4. ALLOWED_HOSTS Errors (Bad Request 400)
+#### 5. ALLOWED_HOSTS Errors (Bad Request 400)
 
 **Symptom**: Accessing site returns "Bad Request (400)"
 
@@ -570,7 +596,7 @@ MIDDLEWARE = [
    ```
 4. Redeploy after updating
 
-#### 5. Emails Not Sending
+#### 6. Emails Not Sending
 
 **Symptom**: No emails received, or errors in worker logs
 
@@ -593,7 +619,7 @@ MIDDLEWARE = [
    ```
 5. **Check Mailgun dashboard**: Look for send attempts and errors
 
-#### 6. Migration Errors During Deploy
+#### 7. Migration Errors During Deploy
 
 **Symptom**: Release phase fails with migration errors
 
@@ -607,7 +633,7 @@ MIDDLEWARE = [
   ```
 - **Rollback**: Deploy previous working commit
 
-#### 7. CORS Errors from Frontend
+#### 8. CORS Errors from Frontend
 
 **Symptom**: Browser console shows CORS errors, API requests fail
 
@@ -621,7 +647,7 @@ MIDDLEWARE = [
 4. **Verify setting**: `CORS_ALLOW_CREDENTIALS = True` for authenticated requests
 5. **Redeploy** after updating environment variables
 
-#### 8. GraphQL Endpoint Returns 404
+#### 9. GraphQL Endpoint Returns 404
 
 **Symptom**: Cannot access `/graphql`
 
