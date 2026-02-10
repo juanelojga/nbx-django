@@ -614,12 +614,15 @@ query {
 
 Returns a single consolidation by ID.
 
-**Access**: Any authenticated user (Note: Currently no permission restrictions)
+**Access**: 
+- **Admin users**: Can access any consolidation
+- **Client users**: Can only access their own consolidations
+- Returns `PermissionDenied` error if user attempts to access another client's consolidation
 
 **Arguments:**
 
-| Argument | Type | Required | Description |
-|----------|------|----------|-------------|
+| Argument | Type | Required | Descrip4tion     |
+|----------|------|----------|------------------|
 | `id` | ID | Yes | Consolidation ID |
 
 ```graphql
