@@ -28,6 +28,7 @@ This file contains essential information for AI coding agents working on the nbx
 | **Testing** | pytest, pytest-django, factory-boy |
 | **Code Quality** | flake8, black, isort, mypy |
 | **MCP Server** | mcp-django |
+| **Dev HTTPS** | django-extensions, werkzeug, pyOpenSSL |
 
 ## MCP Server (mcp-django)
 
@@ -133,6 +134,7 @@ nbx-django/
    ```bash
    cp .env.example .env
    # Edit .env with your settings
+   # IMPORTANT: Set DEBUG=True for development
    ```
 
 4. **Run migrations:**
@@ -141,9 +143,21 @@ nbx-django/
    ```
 
 5. **Start the development server:**
+
+   **Option A - HTTP (Standard):**
    ```bash
    python nbxdjango/manage.py runserver
    ```
+
+   **Option B - HTTPS (With SSL Certificate):**
+   ```bash
+   python nbxdjango/manage.py runserver_plus --cert-file cert
+   ```
+   
+   Notes:
+   - HTTPS option requires `DEBUG=True` in `.env`
+   - Browser will show security warning for self-signed certificate (safe to proceed)
+   - Useful when browser auto-redirects to HTTPS or testing secure contexts
 
 6. **Start the email worker (separate terminal):**
    ```bash
@@ -284,9 +298,11 @@ DJANGO_SUPERUSER_USERNAME=admin DJANGO_SUPERUSER_EMAIL=admin@example.com DJANGO_
 | `CORS_ALLOWED_ORIGINS` | Allowed CORS origins |
 
 ### Authentication
-- JWT tokens with 7-day refresh expiration
+- JWT tokens with 7-day refresh expiration (custom timezone-aware handler)
+- Access tokens expire in 5 minutes
 - Custom email-based authentication backend
 - Password reset via email
+- **Note**: Custom `JWT_REFRESH_EXPIRED_HANDLER` implemented in `packagehandling/jwt_utils.py` to fix timezone-aware datetime handling bug in the default `django-graphql-jwt` implementation
 
 ### CORS
 - `CORS_ALLOW_ALL_ORIGINS = False` in production
@@ -297,23 +313,38 @@ DJANGO_SUPERUSER_USERNAME=admin DJANGO_SUPERUSER_EMAIL=admin@example.com DJANGO_
 ### Platform: Railway
 The project is configured for Railway deployment via GitHub Actions.
 
-### CI/CD Pipeline
-1. **Triggers**: Push/merge to `main` or PR to `master`/`develop`
-2. **Test Job**: Runs migrations and pytest with PostgreSQL service
-3. **Deploy Job**: Deploys to Railway if tests pass (main branch only)
-4. **Release Phase**: Runs `migrate` before starting web process
-
-### Production Configuration
-- Static files served via WhiteNoise with compression
-- Gunicorn as WSGI server
-- Database connection pooling enabled
-- Email queued via Django-Q
+**📖 Complete deployment guide**: See [DEPLOYMENT.md](./DEPLOYMENT.md) for:
+- Environment variable setup (required vs optional)
+- Railway project configuration
+- CI/CD pipeline details
+- Security best practices
+- Troubleshooting common issues
 
 ### Procfile Commands
 ```
 release: python nbxdjango/manage.py migrate
 web: cd nbxdjango && gunicorn nbxdjango.wsgi --log-file -
 ```
+
+### Production Configuration
+- Static files served via WhiteNoise with compression
+- Gunicorn as WSGI server
+- Database connection pooling enabled
+- Email queued via Django-Q
+- Automatic migrations on deploy
+
+### Environment Variables (Required)
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `SECRET_KEY` | Django cryptographic key | `django-insecure-xyz...` |
+| `DEBUG` | Enable debug mode | `False` (production) |
+| `DATABASE_URL` | PostgreSQL connection | Auto-provided by Railway |
+| `ALLOWED_HOSTS` | Permitted hostnames | `app.railway.app` |
+| `MAILGUN_API_KEY` | Email service key | `key-abc123...` |
+| `MAILGUN_SENDER_DOMAIN` | Email sender domain | `mg.yourdomain.com` |
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete list including optional variables.
 
 ## Key Models
 

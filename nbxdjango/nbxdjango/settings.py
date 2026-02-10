@@ -61,6 +61,10 @@ INSTALLED_APPS = [
     "corsheaders",
 ]
 
+# Add django_extensions for development HTTPS support
+if DEBUG:
+    INSTALLED_APPS.append("django_extensions")
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -167,6 +171,9 @@ AUTHENTICATION_BACKENDS = [
 
 GRAPHQL_JWT = {
     "JWT_REFRESH_EXPIRATION_DELTA": datetime.timedelta(days=7),
+    "JWT_EXPIRATION_DELTA": datetime.timedelta(minutes=5),
+    "JWT_ALLOW_REFRESH": True,
+    "JWT_REFRESH_EXPIRED_HANDLER": "packagehandling.jwt_utils.custom_refresh_has_expired",
 }
 
 EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
@@ -209,8 +216,8 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 # Security settings for production
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = "DENY"

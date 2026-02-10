@@ -60,16 +60,55 @@ Authorization: JWT <your_token>
 
 ### Token Refresh
 
-Use the `refreshToken` mutation with the **refresh token** (not the access token) to obtain a new access token:
+The API supports two methods for refreshing JWT access tokens:
+
+#### Method 1: Using `refreshWithToken` (Recommended)
+
+Use the `refreshWithToken` mutation with your refresh token string to obtain a new access token and a new refresh token (token rotation):
+
+```graphql
+mutation RefreshToken($refreshToken: String!) {
+  refreshWithToken(refreshToken: $refreshToken) {
+    token
+    refreshToken
+    payload
+    refreshExpiresIn
+  }
+}
+```
+
+**Variables:**
+```json
+{
+  "refreshToken": "your-refresh-token-string-here"
+}
+```
+
+**Response:**
+- `token`: New JWT access token (valid for 5 minutes)
+- `refreshToken`: New refresh token (old one is automatically revoked)
+- `payload`: JWT payload with user information
+- `refreshExpiresIn`: Refresh token expiration time in seconds (7 days)
+
+**Benefits:**
+- Implements token rotation for enhanced security
+- Intuitive API matching standard refresh token patterns
+- Easy to test in GraphiQL
+
+#### Method 2: Using `refreshToken` (Library Default)
+
+This is the default django-graphql-jwt mutation that expects different parameters:
 
 ```graphql
 mutation {
-  refreshToken(token: "<your_refresh_token>") {
+  refreshToken(token: "<your_jwt_access_token>") {
     token
     payload
   }
 }
 ```
+
+**Note:** This mutation expects the JWT access token, not the refresh token string.
 
 ### Token Verification
 
@@ -80,6 +119,20 @@ mutation {
   }
 }
 ```
+
+### Token Revocation
+
+Revoke a refresh token (requires authentication):
+
+```graphql
+mutation {
+  revokeToken {
+    revoked
+  }
+}
+```
+
+**Note:** This mutation expects the refresh token in an HTTP-only cookie.
 
 ---
 
@@ -709,6 +762,64 @@ mutation {
 
 **Errors:**
 - `GraphQLError("Invalid password reset link.")`: Invalid token or user
+
+---
+
+#### `refreshWithToken`
+
+Refreshes JWT access token using a refresh token string. Returns a new access token and a new refresh token (implements token rotation).
+
+**Access**: Public (no authentication required)
+
+**Arguments:**
+
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| `refreshToken` | String | Yes | The refresh token string obtained from login |
+
+```graphql
+mutation RefreshToken($refreshToken: String!) {
+  refreshWithToken(refreshToken: $refreshToken) {
+    token
+    refreshToken
+    payload
+    refreshExpiresIn
+  }
+}
+```
+
+**Variables:**
+```json
+{
+  "refreshToken": "62bd6142e47b1f97049bd279b5bc952ae8c4a911"
+}
+```
+
+**Returns:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `token` | String | New JWT access token (short-lived, 5 minutes) |
+| `refreshToken` | String | New refresh token (old one is revoked) |
+| `payload` | GenericScalar | Token payload (includes email, username, exp) |
+| `refreshExpiresIn` | Int | Refresh token expiration in seconds (7 days) |
+
+**Errors:**
+- `GraphQLError("Invalid refresh token")`: Token not found in database
+- `GraphQLError("Refresh token has expired")`: Token has expired
+- `GraphQLError("Refresh token has been revoked")`: Token was previously revoked
+
+**Security Notes:**
+- Implements automatic token rotation (old refresh token is revoked when new one is issued)
+- Store refresh tokens securely on the client (e.g., secure storage, not localStorage)
+- Use the new refresh token for subsequent refresh requests
+
+**Example Workflow:**
+1. User logs in via `emailAuth` mutation
+2. Client stores both `token` (access token) and `refreshToken`
+3. When access token expires (after 5 minutes), call `refreshWithToken` with the refresh token
+4. Client updates stored tokens with the new values
+5. Old refresh token is automatically invalidated
 
 ---
 

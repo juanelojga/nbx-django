@@ -629,37 +629,70 @@ mutation {
 
 ## Token Refresh Workflow
 
-Access tokens are short-lived. When your access token expires, use the refresh token to obtain a new one without re-authenticating.
+Access tokens are short-lived (5 minutes). When your access token expires, use the refresh token to obtain a new one without re-authenticating.
 
 ### When to Refresh
 
-- Access tokens expire after a short period (configured server-side)
+- Access tokens expire after 5 minutes
 - API requests return authentication errors when the token expires
-- Use the **refresh token** (not the expired access token) to get a new access token
+- Use the **refresh token string** (not the expired access token) to get a new access token
+- Refresh tokens are valid for 7 days
 
-### Refresh Token Mutation
+### Refresh Token Mutation (Recommended)
+
+Use `refreshWithToken` mutation with your refresh token string:
 
 ```graphql
-mutation {
-  refreshToken(token: "<your_refresh_token>") {
+mutation RefreshToken($refreshToken: String!) {
+  refreshWithToken(refreshToken: $refreshToken) {
     token
+    refreshToken
     payload
     refreshExpiresIn
   }
 }
 ```
 
+**Variables:**
+```json
+{
+  "refreshToken": "62bd6142e47b1f97049bd279b5bc952ae8c4a911"
+}
+```
+
 **Parameters:**
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `token` | String | Yes | The refresh token obtained from `emailAuth` |
+| `refreshToken` | String | Yes | The refresh token string obtained from `emailAuth` |
 
 **Response:**
 | Field | Description |
 |-------|-------------|
-| `token` | New JWT access token |
-| `payload` | Token payload with updated expiration |
-| `refreshExpiresIn` | Refresh token expiration in seconds |
+| `token` | New JWT access token (valid for 5 minutes) |
+| `refreshToken` | New refresh token (old one is automatically revoked) |
+| `payload` | Token payload with user information and updated expiration |
+| `refreshExpiresIn` | Refresh token expiration in seconds (7 days) |
+
+**Security Notes:**
+- Implements automatic token rotation for enhanced security
+- Old refresh token is revoked when new one is issued
+- Store both tokens securely on the client
+- Never share refresh tokens
+
+### Alternative: Standard JWT Refresh
+
+The library also provides a standard `refreshToken` mutation:
+
+```graphql
+mutation {
+  refreshToken(token: "<your_jwt_access_token>") {
+    token
+    payload
+  }
+}
+```
+
+**Note:** This mutation expects the JWT access token, not the refresh token string. Use `refreshWithToken` for the standard refresh token pattern.
 
 ### Complete Authentication Flow Example
 
@@ -667,29 +700,132 @@ mutation {
 # 1. Initial login
 mutation Login {
   emailAuth(email: "user@example.com", password: "password") {
-    token        # Store this - short lived access token
-    refreshToken # Store this - long lived refresh token
+    token        # JWT access token (expires in 5 min) - use for API calls
+    refreshToken # Refresh token string (expires in 7 days) - use to get new access token
     payload
     refreshExpiresIn
   }
 }
 
+# Response:
+# {
+#   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+#   "refreshToken": "62bd6142e47b1f97049bd279b5bc952ae8c4a911",
+#   "payload": { "email": "user@example.com", "exp": 1770672036, ... },
+#   "refreshExpiresIn": 604800
+# }
+
 # 2. Use access token in Authorization header for API calls:
 # Authorization: JWT <access_token>
 
-# 3. When access token expires, refresh it:
+# 3. When access token expires (after 5 minutes), refresh it:
 mutation Refresh {
-  refreshToken(token: "<refresh_token>") {
+  refreshWithToken(refreshToken: "62bd6142e47b1f97049bd279b5bc952ae8c4a911") {
     token        # New access token
+    refreshToken # New refresh token (old one is revoked)
     payload
+    refreshExpiresIn
   }
 }
 
-# 4. Logout (revokes refresh token)
+# Response:
+# {
+#   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",  # New token
+#   "refreshToken": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",  # New refresh token
+#   "payload": { "email": "user@example.com", "exp": 1770672336, ... },
+#   "refreshExpiresIn": 604800
+# }
+
+# 4. Update stored tokens with new values and continue using new access token
+
+# 5. Logout (revokes refresh token)
 mutation Logout {
   revokeToken {
     revoked
   }
+}
+```
+
+### Error Handling
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `Invalid refresh token` | Token not found in database | Login again |
+| `Refresh token has expired` | Token older than 7 days | Login again |
+| `Refresh token has been revoked` | Token was manually revoked or already used | Login again |
+
+### Client-Side Implementation Tips
+
+**Storage:**
+- Store tokens securely (secure storage on mobile, httpOnly cookies on web)
+- Never store tokens in localStorage (XSS vulnerability)
+- Clear tokens on logout
+
+**Refresh Strategy:**
+- Proactively refresh before expiration (e.g., at 4 minutes)
+- OR catch 401 errors and refresh on-demand
+- Always update both tokens after refresh
+
+**Example JavaScript Implementation:**
+```javascript
+// Store tokens after login
+const loginResponse = await login(email, password);
+secureStorage.setItem('accessToken', loginResponse.token);
+secureStorage.setItem('refreshToken', loginResponse.refreshToken);
+
+// Refresh function
+async function refreshAccessToken() {
+  const refreshToken = secureStorage.getItem('refreshToken');
+  const response = await fetch('/graphql', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query: `
+        mutation RefreshToken($refreshToken: String!) {
+          refreshWithToken(refreshToken: $refreshToken) {
+            token
+            refreshToken
+            payload
+          }
+        }
+      `,
+      variables: { refreshToken }
+    })
+  });
+  
+  const { data } = await response.json();
+  // Update stored tokens
+  secureStorage.setItem('accessToken', data.refreshWithToken.token);
+  secureStorage.setItem('refreshToken', data.refreshWithToken.refreshToken);
+}
+
+// Automatic retry on 401
+async function apiCall(query) {
+  const accessToken = secureStorage.getItem('accessToken');
+  let response = await fetch('/graphql', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `JWT ${accessToken}`
+    },
+    body: JSON.stringify({ query })
+  });
+  
+  // If token expired, refresh and retry
+  if (response.status === 401) {
+    await refreshAccessToken();
+    const newToken = secureStorage.getItem('accessToken');
+    response = await fetch('/graphql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `JWT ${newToken}`
+      },
+      body: JSON.stringify({ query })
+    });
+  }
+  
+  return response.json();
 }
 ```
 
@@ -716,6 +852,7 @@ mutation Logout {
 |----------|-------|--------|-----------|
 | **Authentication** ||||
 | `emailAuth` | ✅ | ✅ | ✅ |
+| `refreshWithToken` | ✅ | ✅ | ✅ |
 | `refreshToken` | ✅ | ✅ | ✅ |
 | `forgotPassword` | ✅ | ✅ | ✅ |
 | `resetPassword` | ✅ | ✅ | ✅ |

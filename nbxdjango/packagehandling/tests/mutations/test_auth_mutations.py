@@ -10,6 +10,7 @@ from packagehandling.schema.mutation_parts.auth_mutations import (
     CustomRevokeToken,
     EmailAuth,
     ForgotPassword,
+    RefreshWithToken,
     ResetPassword,
 )
 
@@ -151,3 +152,75 @@ class TestCustomRevokeToken:
         # Adding root as None
         with pytest.raises(GraphQLError, match="Refresh token not found."):
             mutation.mutate(None, info)
+
+
+@pytest.mark.django_db
+class TestRefreshWithToken:
+    @pytest.fixture
+    def refresh_token(self, user):
+        """Create a valid refresh token for testing"""
+        return RefreshToken.objects.create(user=user)
+
+    def test_refresh_with_valid_token(self, user, refresh_token):
+        """Test successful token refresh with a valid refresh token"""
+        mutation = RefreshWithToken()
+        info = MagicMock(context=MagicMock())
+
+        result = mutation.mutate(info, refreshToken=refresh_token.token)
+
+        # Assertions
+        assert result.token is not None
+        assert result.refreshToken is not None
+        assert result.refreshToken != refresh_token.token  # New token should be different (rotation)
+        assert result.payload["email"] == user.email
+        assert result.refreshExpiresIn > 0
+
+    def test_refresh_with_nonexistent_token(self):
+        """Test refresh fails with non-existent refresh token"""
+        mutation = RefreshWithToken()
+        info = MagicMock(context=MagicMock())
+
+        with pytest.raises(GraphQLError, match="Invalid refresh token"):
+            mutation.mutate(info, refreshToken="nonexistent-token-12345")
+
+    def test_refresh_with_expired_token(self, user):
+        """Test refresh fails with expired refresh token"""
+        # Create an expired refresh token
+        refresh_token = RefreshToken.objects.create(user=user)
+
+        # Mock the is_expired method to return True
+        with patch.object(RefreshToken, "is_expired", return_value=True):
+            mutation = RefreshWithToken()
+            info = MagicMock(context=MagicMock())
+
+            with pytest.raises(GraphQLError, match="Refresh token has expired"):
+                mutation.mutate(info, refreshToken=refresh_token.token)
+
+    def test_refresh_with_revoked_token(self, user):
+        """Test refresh fails with revoked refresh token"""
+        # Create a refresh token and revoke it
+        refresh_token = RefreshToken.objects.create(user=user)
+        refresh_token.revoke()
+
+        mutation = RefreshWithToken()
+        info = MagicMock(context=MagicMock())
+
+        with pytest.raises(GraphQLError, match="Refresh token has been revoked"):
+            mutation.mutate(info, refreshToken=refresh_token.token)
+
+    def test_new_access_token_works_for_authenticated_queries(self, user, refresh_token):
+        """Test that the new access token can be used for authenticated queries"""
+        import graphql_jwt
+
+        mutation = RefreshWithToken()
+        info = MagicMock(context=MagicMock())
+
+        result = mutation.mutate(info, refreshToken=refresh_token.token)
+
+        # Decode the new access token to verify it's valid
+        payload = graphql_jwt.utils.jwt_decode(result.token)
+
+        # Verify the payload contains the correct user information
+        assert payload["email"] == user.email
+        assert "exp" in payload  # Expiration should be present
+        assert "origIat" in payload  # Original issued at (camelCase format)
