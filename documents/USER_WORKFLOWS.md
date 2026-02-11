@@ -843,8 +843,8 @@ async function apiCall(query) {
 | `client` | Any client | Own only | ❌ |
 | `allPackages` | All packages | Own packages only | ❌ |
 | `package` | Any package | Own packages only | ❌ |
-| `allConsolidates` | All consolidations | ✅ (Note: No restrictions) | ❌ |
-| `consolidateById` | Any consolidation | ✅ (Note: No restrictions) | ❌ |
+| `allConsolidates` | All consolidations | Own consolidations only | ❌ |
+| `consolidateById` | Any consolidation | Own consolidations only | ❌ |
 
 ### Mutation Permissions
 

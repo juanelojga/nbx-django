@@ -511,30 +511,128 @@ query {
 
 #### `allConsolidates`
 
-Returns a list of all consolidations.
+Returns a paginated list of consolidations with filtering and sorting capabilities.
 
-**Access**: Any authenticated user (Note: Currently no permission restrictions)
+**Access**: 
+- **Admin users**: Can access all consolidations
+- **Client users**: Can only access their own consolidations
+- **Anonymous**: ❌ Denied
+
+**Arguments:**
+
+| Argument | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `search` | String | No | - | Search by client name or email (case-insensitive) |
+| `page` | Int | No | 1 | Page number for pagination |
+| `pageSize` | Int | No | 10 | Number of items per page (valid: 10, 20, 50, 100) |
+| `orderBy` | String | No | `-created_at` | Field to order by. Prefix with `-` for descending order |
+| `status` | String | No | - | Filter by consolidation status |
+
+**Valid `orderBy` fields:**
+- `created_at` / `-created_at`
+- `delivery_date` / `-delivery_date`
+- `status` / `-status`
+
+**Valid `status` values:**
+- `awaiting_payment`
+- `pending`
+- `processing`
+- `in_transit`
+- `delivered`
+- `cancelled`
+
+**Example - Basic query with pagination:**
 
 ```graphql
 query {
-  allConsolidates {
-    id
-    description
-    status
-    deliveryDate
-    client {
-      fullName
-      email
-    }
-    packages {
-      barcode
+  allConsolidates(page: 1, pageSize: 10) {
+    results {
+      id
       description
+      status
+      deliveryDate
+      createdAt
+      client {
+        fullName
+        email
+      }
+      packages {
+        barcode
+        description
+      }
     }
+    totalCount
+    page
+    pageSize
+    hasNext
+    hasPrevious
   }
 }
 ```
 
-**Returns**: `[ConsolidateType]`
+**Example - With filtering and ordering:**
+
+```graphql
+query {
+  allConsolidates(
+    status: "in_transit",
+    orderBy: "-delivery_date",
+    page: 1,
+    pageSize: 20
+  ) {
+    results {
+      id
+      status
+      deliveryDate
+      client {
+        fullName
+      }
+    }
+    totalCount
+    hasNext
+  }
+}
+```
+
+**Example - With search:**
+
+```graphql
+query {
+  allConsolidates(
+    search: "john",
+    page: 1,
+    pageSize: 10
+  ) {
+    results {
+      id
+      description
+      status
+      client {
+        fullName
+        email
+      }
+    }
+    totalCount
+  }
+}
+```
+
+**Note**: The `search` parameter performs a case-insensitive search across the client's first name, last name, and email address.
+
+**Returns**: `ConsolidateConnection`
+
+**Connection Type Fields:**
+- `results`: `[ConsolidateType]` - Array of consolidate objects
+- `totalCount`: `Int` - Total number of items matching the query
+- `page`: `Int` - Current page number
+- `pageSize`: `Int` - Number of items per page
+- `hasNext`: `Boolean` - Whether there is a next page
+- `hasPrevious`: `Boolean` - Whether there is a previous page
+
+**Errors:**
+- `ValueError`: If `pageSize` is not one of [10, 20, 50, 100]
+- `ValueError`: If `orderBy` field is not valid
+- `PermissionDenied`: If user is not authenticated or lacks access
 
 ---
 
@@ -542,12 +640,15 @@ query {
 
 Returns a single consolidation by ID.
 
-**Access**: Any authenticated user (Note: Currently no permission restrictions)
+**Access**: 
+- **Admin users**: Can access any consolidation
+- **Client users**: Can only access their own consolidations
+- Returns `PermissionDenied` error if user attempts to access another client's consolidation
 
 **Arguments:**
 
-| Argument | Type | Required | Description |
-|----------|------|----------|-------------|
+| Argument | Type | Required | Descrip4tion     |
+|----------|------|----------|------------------|
 | `id` | ID | Yes | Consolidation ID |
 
 ```graphql
@@ -1425,8 +1526,8 @@ mutation {
 | `client` | Any | Own only | ❌ |
 | `allPackages` | All + filter by client | Own only | ❌ |
 | `package` | Any | Own only | ❌ |
-| `allConsolidates` | ✅ | ✅ | ❌ |
-| `consolidateById` | ✅ | ✅ | ❌ |
+| `allConsolidates` | All consolidates | Own only | ❌ |
+| `consolidateById` | Any | Own only | ❌ |
 | **Mutations** ||||
 | `emailAuth` | ✅ | ✅ | ✅ |
 | `forgotPassword` | ✅ | ✅ | ✅ |

@@ -115,3 +115,12 @@ class PackageConnection(graphene.ObjectType):
     page_size = graphene.Int()
     has_next = graphene.Boolean()
     has_previous = graphene.Boolean()
+
+
+class ConsolidateConnection(graphene.ObjectType):
+    results = graphene.List(ConsolidateType)
+    total_count = graphene.Int()
+    page = graphene.Int()
+    page_size = graphene.Int()
+    has_next = graphene.Boolean()
+    has_previous = graphene.Boolean()
