@@ -10,7 +10,7 @@ This file contains essential information for AI coding agents working on the nbx
 - **Client Management**: Track client information with contact details and addresses
 - **Package Tracking**: Manage packages with barcode, courier info, dimensions, weight, and pricing
 - **Consolidation**: Group packages into consolidations with status tracking
-- **Asynchronous Email**: Django-Q + Mailgun for non-blocking email delivery
+- **Asynchronous Email**: Django-Q2 + Mailgun for non-blocking email delivery
 - **Authentication**: JWT-based authentication with email/password login
 
 ## Technology Stack
@@ -21,7 +21,7 @@ This file contains essential information for AI coding agents working on the nbx
 | **API** | GraphQL (Graphene-Django) |
 | **Database** | PostgreSQL |
 | **Authentication** | django-graphql-jwt |
-| **Email** | Mailgun via django-anymail + Django-Q |
+| **Email** | Mailgun via django-anymail + Django-Q2 |
 | **CORS** | django-cors-headers |
 | **Static Files** | WhiteNoise |
 | **WSGI Server** | Gunicorn |
@@ -112,7 +112,7 @@ nbx-django/
 ## Development Environment Setup
 
 ### Prerequisites
-- Python 3.11
+- Python 3.12
 - PostgreSQL (or use Docker via docker-compose)
 
 ### Setup Steps
@@ -209,7 +209,7 @@ pre-commit run --all-files
 
 ### Python/Django Conventions
 - **Line length**: 120 characters (configured in `pyproject.toml` and `.flake8`)
-- **Python version**: 3.11+
+- **Python version**: 3.12+
 - **Import organization**: Use `isort` with black profile
 - **Type hints**: Use mypy for type checking
 
@@ -330,7 +330,7 @@ web: cd nbxdjango && gunicorn nbxdjango.wsgi --log-file -
 - Static files served via WhiteNoise with compression
 - Gunicorn as WSGI server
 - Database connection pooling enabled
-- Email queued via Django-Q
+- Email queued via Django-Q2
 - Automatic migrations on deploy
 
 ### Environment Variables (Required)
@@ -391,4 +391,4 @@ See [GRAPHQL_API.md](./GRAPHQL_API.md) for complete documentation including:
 - **Django Admin**: Available at `/admin/` with Package registered
 - **Signals**: Defined in `packagehandling/signals.py`
 - **Custom Commands**: Located in `packagehandling/management/commands/`
-- **Email System**: Uses Django-Q for async processing via `send_email()` utility
+- **Email System**: Uses Django-Q2 for async processing via `send_email()` utility

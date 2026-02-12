@@ -6,7 +6,7 @@ This is a Django project for managing packages.
 
 ### 1. Prerequisites
 
-*   Python 3.11
+*   Python 3.12
 *   PostgreSQL
 
 ### 2. Initial Setup
@@ -86,7 +86,7 @@ This project is configured for deployment to [Railway](https://railway.app/) wit
 - **Deploy Trigger**: Push to `main` branch (after tests pass)
 - **Database**: PostgreSQL (Railway-managed)
 - **Web Server**: Gunicorn
-- **Background Jobs**: Django-Q worker (separate service)
+- **Background Jobs**: Django-Q2 worker (separate service)
 
 ### Essential Environment Variables
 
@@ -103,13 +103,13 @@ This project is configured for deployment to [Railway](https://railway.app/) wit
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete environment variable documentation, Railway setup guide, CI/CD configuration, security best practices, and troubleshooting.
 
-## Asynchronous Email Setup (Django-Q + Mailgun)
+## Asynchronous Email Setup (Django-Q2 + Mailgun)
 
-This project uses **Django-Q** to queue emails and **Mailgun** to send them. This prevents slow email API calls from blocking user requests.
+This project uses **Django-Q2** to queue emails and **Mailgun** to send them. This prevents slow email API calls from blocking user requests.
 
 ### 1. How It Works
 
-1.  **Queueing:** When an email needs to be sent, the `send_email` utility function adds the email to a queue using `Django-Q` instead of sending it immediately.
+1.  **Queueing:** When an email needs to be sent, the `send_email` utility function adds the email to a queue using `Django-Q2` instead of sending it immediately.
 2.  **Processing:** A separate worker process, the `qcluster`, runs in the background, monitoring the queue.
 3.  **Sending:** When the `qcluster` finds a new email task, it processes it and sends the email via the Mailgun API.
 
@@ -117,10 +117,10 @@ This project uses **Django-Q** to queue emails and **Mailgun** to send them. Thi
 
 #### a. Install Required Packages
 
-Install `django-q`, `django-anymail` (with Mailgun support), and `python-dotenv`.
+Install `django-q2`, `django-anymail` (with Mailgun support), and `python-dotenv`.
 
 ```bash
-pip install django-q "django-anymail[mailgun]" python-dotenv
+pip install django-q2 "django-anymail[mailgun]" python-dotenv
 ```
 
 These packages are included in `requirements.txt`.
@@ -138,7 +138,7 @@ An example file is provided at `.env.example`. The `.env` file is ignored by Git
 
 #### c. Run Migrations
 
-Django-Q requires its own database tables to manage the queue. Run the migrations to create them:
+Django-Q2 requires its own database tables to manage the queue. Run the migrations to create them:
 
 ```bash
 python nbxdjango/manage.py migrate
