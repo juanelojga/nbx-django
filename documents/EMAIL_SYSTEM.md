@@ -2,20 +2,20 @@
 
 ## Overview
 
-The nbx-django project uses an asynchronous email system powered by **Mailgun** (via `django-anymail`) and **Django-Q** for background processing. This ensures email sending doesn't block GraphQL API responses.
+The nbx-django project uses an asynchronous email system powered by **Mailgun** (via `django-anymail`) and **Django-Q2** for background processing. This ensures email sending doesn't block GraphQL API responses.
 
 ---
 
 ## Architecture
 
 ```
-GraphQL Mutation → send_email() → Django-Q Queue → Q Cluster Worker → Mailgun API
+GraphQL Mutation → send_email() → Django-Q2 Queue → Q Cluster Worker → Mailgun API
 ```
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | Email Backend | `django-anymail` | Abstracts email provider (Mailgun) |
-| Queue System | `django-q` | Asynchronous task processing |
+| Queue System | `django-q2` | Asynchronous task processing |
 | Email Provider | Mailgun | Actual email delivery service |
 
 ---
@@ -44,7 +44,7 @@ ANYMAIL = {
 DEFAULT_FROM_EMAIL = "noreply@yourdomain.com"
 ```
 
-### Django-Q Configuration
+### Django-Q2 Configuration
 
 ```python
 Q_CLUSTER = {
@@ -87,7 +87,7 @@ send_email(
 ```
 
 This function:
-- Queues the email asynchronously via Django-Q
+- Queues the email asynchronously via Django-Q2
 - Uses `DEFAULT_FROM_EMAIL` as the sender
 - Returns immediately (non-blocking)
 
@@ -192,7 +192,7 @@ Tests typically mock the `send_email` function to avoid actual email delivery.
 |-------|----------------|
 | Q cluster running? | `ps aux \| grep qcluster` |
 | Env vars set? | `echo $MAILGUN_API_KEY` |
-| Tasks in queue? | Check Django admin or Django-Q monitoring |
+| Tasks in queue? | Check Django admin or Django-Q2 monitoring |
 | Mailgun domain verified? | Check Mailgun dashboard |
 
 ### Common Issues

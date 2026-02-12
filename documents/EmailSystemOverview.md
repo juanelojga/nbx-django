@@ -23,7 +23,7 @@ This document describes the mechanism for sending emails in the project. The ema
 - **Functionality**:
   - Implements background execution.
   - Offloads the email-sending task to worker processes.
-  - Likely uses a library such as `django-q` or another queue system.
+  - Likely uses a library such as `django-q2` or another queue system.
 
 ### Background Workers
 - **Responsibility**:
@@ -68,5 +68,5 @@ This document describes the mechanism for sending emails in the project. The ema
 
 ## Notes
 
-- Ensure the queuing system (e.g., `django-q` workers) is active and properly configured to process tasks.
+- Ensure the queuing system (e.g., `django-q2` workers) is active and properly configured to process tasks.
 - For testing and troubleshooting, consider checking the task queue and worker logs.

@@ -18,12 +18,12 @@ This guide provides comprehensive instructions for deploying the **nbx-django** 
 
 **nbx-django** is deployed to [Railway](https://railway.app/) using:
 - **Platform**: Railway (PaaS)
-- **Python Version**: 3.11.x (pinned via `.python-version` and `runtime.txt`)
+- **Python Version**: 3.12.x (pinned via `.python-version` and `runtime.txt`)
 - **Web Server**: Gunicorn
 - **Database**: PostgreSQL (Railway-managed)
 - **Static Files**: WhiteNoise
 - **Email**: Mailgun via Django-Anymail
-- **Background Jobs**: Django-Q worker
+- **Background Jobs**: Django-Q2 worker
 - **CI/CD**: GitHub Actions
 
 ### Architecture
@@ -100,7 +100,7 @@ These variables have sensible defaults but can be customized:
 - GitHub account with access to the repository
 - Railway account ([Sign up](https://railway.app/))
 - Mailgun account for email sending ([Sign up](https://signup.mailgun.com/))
-- **Python 3.11.x** (required for Railway deployment - specified in `.python-version` and `runtime.txt`)
+- **Python 3.12.x** (required for Railway deployment - specified in `.python-version` and `runtime.txt`)
 
 ### Step 1: Create Railway Project
 
@@ -152,9 +152,9 @@ web: cd nbxdjango && gunicorn nbxdjango.wsgi --log-file -
 - **release**: Runs database migrations before deployment goes live
 - **web**: Starts Gunicorn web server to handle HTTP requests
 
-### Step 5: Add Django-Q Worker (Background Jobs)
+### Step 5: Add Django-Q2 Worker (Background Jobs)
 
-Django-Q requires a separate worker process for background email processing:
+Django-Q2 requires a separate worker process for background email processing:
 
 1. **In Railway project**: Click "New" → "Empty Service"
 2. **Name it**: `nbx-django-worker`
@@ -245,7 +245,7 @@ Set these in your GitHub repository: **Settings** → **Secrets and variables** 
 ### CI/CD Environment
 
 Tests run with:
-- **Python**: 3.11
+- **Python**: 3.12
 - **PostgreSQL**: 16
 - **Environment**:
   - `DEBUG=true`
@@ -271,7 +271,7 @@ Tests run with:
 - Request timeout handling
 - Logging to Railway
 
-### Worker Service (Django-Q)
+### Worker Service (Django-Q2)
 
 **What it does**: Processes background tasks, primarily email sending
 
@@ -280,7 +280,7 @@ Tests run with:
 - **Workers**: 4 (configured in settings.py)
 - **Queue**: Uses PostgreSQL as queue backend
 
-**Django-Q Settings** (`settings.py`):
+**Django-Q2 Settings** (`settings.py`):
 ```python
 Q_CLUSTER = {
     "name": "DjangORM",
@@ -293,10 +293,11 @@ Q_CLUSTER = {
 }
 ```
 
-**Why Django-Q?**
+**Why Django-Q2?**
 - Prevents slow email API calls from blocking user requests
 - Automatic retry on failures
 - Uses PostgreSQL (no Redis required)
+- Python 3.12+ compatible (maintained fork of django-q)
 
 ### Database (PostgreSQL)
 
@@ -335,7 +336,7 @@ ANYMAIL = {
 5. Update `DEFAULT_FROM_EMAIL` in settings if needed
 
 **Email features**:
-- Async sending via Django-Q
+- Async sending via Django-Q2
 - Automatic retry on failures
 - HTML email templates
 
@@ -509,31 +510,7 @@ ALLOWED_HOSTS=app.railway.app,api.yourdomain.com,yourdomain.com
 
 ### Common Issues and Solutions
 
-#### 1. Python Version Compatibility Error (pkg_resources)
-
-**Symptom**: Deployment fails with `ModuleNotFoundError: No module named 'pkg_resources'` or `django_q` import errors
-
-**Root Cause**: Railway is using Python 3.13, but `django-q` requires `pkg_resources` which has compatibility issues with Python 3.13.
-
-**Solution**:
-The project includes `.python-version` and `runtime.txt` files that pin Python to 3.11.x. Ensure these files exist:
-
-```bash
-# .python-version
-3.11.10
-
-# runtime.txt
-python-3.11.10
-```
-
-Railway will automatically detect these files and use Python 3.11 instead of the latest version.
-
-**Verification**:
-1. Check deployment logs for `Using Python version 3.11.x`
-2. Ensure the files are committed to the repository
-3. Trigger a new deployment after adding these files
-
-#### 2. Deployment Fails with "SECRET_KEY not set"
+#### 1. Deployment Fails with "SECRET_KEY not set"
 
 **Symptom**: Build fails, error mentions `SECRET_KEY`
 
