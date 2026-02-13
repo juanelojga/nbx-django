@@ -573,7 +573,44 @@ MIDDLEWARE = [
    ```
 4. Redeploy after updating
 
-#### 6. Emails Not Sending
+#### 6. Too Many Redirects (301/302 Loop)
+
+**Symptom**: Browser shows "Too many redirects" error, or site keeps redirecting when `DEBUG=False`
+
+**Cause**: Django's `SECURE_SSL_REDIRECT` doesn't recognize Railway's proxy HTTPS connection, causing an infinite HTTP → HTTPS redirect loop.
+
+**Solution**:
+
+The project is already configured with Railway proxy headers in `settings.py`:
+
+```python
+# Railway proxy configuration
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+```
+
+**If the issue persists**:
+1. **Verify environment variables**:
+   - `DEBUG=False` (must be exactly `False`, not `false` or `0`)
+   - `ALLOWED_HOSTS` includes your Railway domain
+2. **Check Railway logs** for any SSL-related errors
+3. **Clear browser cache** and try incognito mode
+4. **Test with curl**:
+   ```bash
+   curl -I https://your-app.railway.app/graphql
+   ```
+   Should return `200 OK`, not `301 Moved Permanently`
+
+**Temporary workaround** (testing only, not for production):
+```python
+# In settings.py - REMOVE AFTER TESTING
+SECURE_SSL_REDIRECT = False  # Disables HTTPS redirect
+```
+
+⚠️ **Warning**: Never deploy to production with `SECURE_SSL_REDIRECT = False`
+
+#### 7. Emails Not Sending
 
 **Symptom**: No emails received, or errors in worker logs
 
@@ -596,7 +633,7 @@ MIDDLEWARE = [
    ```
 5. **Check Mailgun dashboard**: Look for send attempts and errors
 
-#### 7. Migration Errors During Deploy
+#### 8. Migration Errors During Deploy
 
 **Symptom**: Release phase fails with migration errors
 
@@ -610,7 +647,7 @@ MIDDLEWARE = [
   ```
 - **Rollback**: Deploy previous working commit
 
-#### 8. CORS Errors from Frontend
+#### 9. CORS Errors from Frontend
 
 **Symptom**: Browser console shows CORS errors, API requests fail
 
@@ -624,7 +661,7 @@ MIDDLEWARE = [
 4. **Verify setting**: `CORS_ALLOW_CREDENTIALS = True` for authenticated requests
 5. **Redeploy** after updating environment variables
 
-#### 9. GraphQL Endpoint Returns 404
+#### 10. GraphQL Endpoint Returns 404
 
 **Symptom**: Cannot access `/graphql`
 
