@@ -9,7 +9,22 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
+
+  web:
+    build: .
+    container_name: nbxdjango-web
+    command: python nbxdjango/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://myuser:mypassword@db:5432/mydatabase
+    depends_on:
+      - db
 
 volumes:
   postgres_data:
