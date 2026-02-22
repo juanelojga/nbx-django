@@ -21,8 +21,12 @@ RUN pip install -r requirements.txt -r requirements-dev.txt
 # Copy project
 COPY . /app/
 
+# Make entrypoint executable just in case
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Expose port
 EXPOSE 8000
 
 # Run the application
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["python", "nbxdjango/manage.py", "runserver", "0.0.0.0:8000"]

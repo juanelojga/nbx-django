@@ -71,6 +71,43 @@ This command:
 
 The interactive GraphQL interface is available at `http://127.0.0.1:8000/graphql` (or `https://` if using runserver_plus) and is automatically enabled in the development environment (`DEBUG=True`).
 
+#### Option C: Docker (Parallel Environments)
+
+This application runs a stack that you might normally use in other applications. To solve the problem of not being able to work on them in parallel, the application is containerized using Docker. This allows you to run the applications in parallel without being worried about using the same ports or similar problems. Ports are set using the `.env` environment file.
+
+**Hot reloading is enabled automatically** out of the box because your local directory is mounted to the container.
+
+1.  Start the containers in the background:
+    ```bash
+    docker-compose up -d --build
+    ```
+2.  The application will be accessible at the port specified by `WEB_PORT` in your `.env` file (e.g., `http://127.0.0.1:8000/`).
+
+**First Run Initialization:**
+The Docker container is configured with an entrypoint script (`docker-entrypoint.sh`) that automatically runs database migrations when the container starts.
+
+Furthermore, on the **first run only**, the script will automatically:
+1. Create a superuser (`admin` / `admin@example.com` / `password`).
+2. Generate fake test data (clients, users, packages, consolidations) so the application is ready to use immediately without manual setup.
+
+**Running Commands in Docker:**
+If you need to execute management commands, run the tests, or access the shell, you must execute them inside the running `web` container.
+
+*   **Running Migrations Manually:**
+    ```bash
+    docker-compose exec web python nbxdjango/manage.py migrate
+    ```
+
+*   **Running the Tests:**
+    ```bash
+    docker-compose exec -e DJANGO_SETTINGS_MODULE=nbxdjango.settings web pytest nbxdjango/packagehandling/tests/
+    ```
+
+*   **Accessing the Django Shell:**
+    ```bash
+    docker-compose exec web python nbxdjango/manage.py shell
+    ```
+
 For complete GraphQL API documentation, see [GRAPHQL_API.md](./GRAPHQL_API.md).
 
 ## Production Deployment
@@ -176,6 +213,9 @@ The email will be added to the queue and sent by the `qcluster` process.
 ## Creating Fake Data
 
 To populate the database with fake data for testing and development purposes, use the following management commands. These commands use [factory_boy](https://factoryboy.readthedocs.io/) and [Faker](https://faker.readthedocs.io/) to generate realistic test data.
+
+> **💡 Note for Docker Users**: If you are running the project via Docker, you need to execute these commands inside the `web` container. Prepend `docker-compose exec web` to any of the management commands below. Example: 
+> `docker-compose exec web python nbxdjango/manage.py create_fake_users`
 
 ### Available Commands
 
@@ -353,6 +393,11 @@ For automation, you can combine setting the environment variables and running th
 ```bash
 DJANGO_SUPERUSER_USERNAME=your_username DJANGO_SUPERUSER_EMAIL=your_email@example.com DJANGO_SUPERUSER_PASSWORD=your_password python nbxdjango/manage.py create_superuser_script
 ```
+
+> **🐳 Docker Equivalent**:
+> ```bash
+> docker-compose exec -e DJANGO_SUPERUSER_USERNAME=admin -e DJANGO_SUPERUSER_EMAIL=admin@example.com -e DJANGO_SUPERUSER_PASSWORD=password web python nbxdjango/manage.py create_superuser_script
+> ```
 
 ### Why Use This Method?
 

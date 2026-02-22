@@ -23,6 +23,9 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgres://myuser:mypassword@db:5432/mydatabase
+      - DJANGO_SUPERUSER_USERNAME=admin
+      - DJANGO_SUPERUSER_EMAIL=admin@example.com
+      - DJANGO_SUPERUSER_PASSWORD=password
     depends_on:
       - db
 
