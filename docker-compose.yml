@@ -12,7 +12,9 @@ services:
       - "${DB_PORT:-5432}:5432"
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     container_name: nbxdjango-web
     command: python nbxdjango/manage.py runserver 0.0.0.0:8000
     volumes:
