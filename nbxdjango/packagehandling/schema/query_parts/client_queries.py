@@ -16,7 +16,7 @@ class ClientQueries(graphene.ObjectType):
         page_size=graphene.Int(),
         order_by=graphene.String(),
     )
-    client = graphene.Field(ClientType, id=graphene.Int())
+    client = graphene.Field(ClientType, id=graphene.ID(required=True))
 
     def resolve_all_clients(root, info, search=None, page=1, page_size=10, order_by=None):
         if page_size not in [10, 20, 50, 100]:

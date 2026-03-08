@@ -13,10 +13,10 @@ class PackageQueries(graphene.ObjectType):
         page=graphene.Int(),
         page_size=graphene.Int(),
         order_by=graphene.String(),
-        client_id=graphene.Int(),
+        client_id=graphene.ID(),
         not_in_consolidate=graphene.Boolean(default_value=True),
     )
-    package = graphene.Field(PackageType, id=graphene.Int())
+    package = graphene.Field(PackageType, id=graphene.ID(required=True))
 
     def resolve_all_packages(
         root, info, search=None, page=1, page_size=10, order_by=None, client_id=None, not_in_consolidate=True
